@@ -1,0 +1,36 @@
+{
+  "model_name": "VoltSense_RandomForest_SOH_Regressor",
+  "model_version": "1.0.0",
+  "trained_at": "2026-11-24T16:59:55.861924+00:00",
+  "algorithm": "Random Forest Regressor (n_estimators=120, max_depth=12)",
+  "features": [
+    "cycle_count",
+    "avg_temperature",
+    "peak_temperature",
+    "c_rate",
+    "voltage_dispersion",
+    "internal_resistance",
+    "avg_voltage"
+  ],
+  "evaluation_metrics": {
+    "MAE_percent": 0.5034,
+    "RMSE_percent": 0.6258,
+    "R2_Score": 0.979
+  },
+  "feature_importances": {
+    "cycle_count": 0.8531,
+    "avg_temperature": 0.0068,
+    "peak_temperature": 0.0039,
+    "c_rate": 0.0195,
+    "voltage_dispersion": 0.0024,
+    "internal_resistance": 0.112,
+    "avg_voltage": 0.0024
+  },
+  "dataset_info": {
+    "source": "Calibrated Li-ion NMC Battery Degradation Simulation (Arrhenius & SEI kinetics)",
+    "sample_count": 3000,
+    "train_samples": 2400,
+    "test_samples": 600,
+    "disclaimer": "Trained on semi-empirical degradation physics for demonstration and testing. For certified automotive deployment, retrain with OEM drive-cycle laboratory test records."
+  }
+}

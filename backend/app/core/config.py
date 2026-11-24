@@ -1,0 +1,33 @@
+from pydantic_settings import BaseSettings, SettingsConfigDict
+import os
+from typing import List
+
+class Settings(BaseSettings):
+    PROJECT_NAME: str = "VoltSense AI"
+    VERSION: str = "1.0.0"
+    API_V1_STR: str = "/api/v1"
+    
+    SECRET_KEY: str = os.getenv("SECRET_KEY", "voltsense_ai_super_secret_jwt_key_2026_production")
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
+    ALGORITHM: str = "HS256"
+    
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./voltsense.db")
+    
+    CORS_ORIGINS: List[str] = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+        "*"
+    ]
+    
+    SIMULATION_INTERVAL_SEC: float = 1.0
+    SIMULATION_MODE_DEFAULT: bool = True
+    
+    MQTT_BROKER_HOST: str = os.getenv("MQTT_BROKER_HOST", "localhost")
+    MQTT_BROKER_PORT: int = int(os.getenv("MQTT_BROKER_PORT", "1883"))
+    MQTT_TOPIC_PREFIX: str = "voltsense"
+    
+    model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
+
+settings = Settings()
