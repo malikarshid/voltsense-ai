@@ -23,9 +23,9 @@ export default function RootLayout({
         <VehicleProvider>
           <div className="flex min-h-screen">
             <Sidebar />
-            <div className="flex-1 ml-64 flex flex-col min-w-0">
+            <div className="flex-1 md:ml-64 flex flex-col min-w-0 transition-all duration-300">
               <TopNav />
-              <main className="flex-1 p-6 overflow-y-auto">
+              <main className="flex-1 p-4 md:p-6 overflow-y-auto">
                 {children}
               </main>
             </div>

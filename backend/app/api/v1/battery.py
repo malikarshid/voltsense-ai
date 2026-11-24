@@ -29,14 +29,15 @@ async def get_battery_health(vehicle_id: str, db: AsyncSession = Depends(get_db)
         vehicle = res.scalars().first()
 
     pack = vehicle.pack if vehicle else None
+    is_sim_vehicle = bool(vehicle and vehicle.vin == "KA05ER7777")
     
     # Sync with real-time simulator values if KA05ER7777
-    soc = simulator.soc if (vehicle and vehicle.vin == "KA05ER7777") else (pack.current_soc if pack else 67.0)
-    soh = simulator.soh if (vehicle and vehicle.vin == "KA05ER7777") else (pack.current_soh if pack else 88.4)
-    volt = simulator.pack_voltage if (vehicle and vehicle.vin == "KA05ER7777") else (pack.total_voltage if pack else 34.9)
-    temp = simulator.avg_temperature if (vehicle and vehicle.vin == "KA05ER7777") else (pack.avg_temperature if pack else 23.6)
-    imp = simulator.total_impedance if (vehicle and vehicle.vin == "KA05ER7777") else (pack.total_impedance if pack else 0.1085)
-    rng = simulator.range_km if (vehicle and vehicle.vin == "KA05ER7777") else (pack.estimated_range_km if pack else 48.0)
+    soc = simulator.soc if is_sim_vehicle else (pack.current_soc if pack else 67.0)
+    soh = simulator.soh if is_sim_vehicle else (pack.current_soh if pack else 88.4)
+    volt = simulator.pack_voltage if is_sim_vehicle else (pack.total_voltage if pack else (vehicle.nominal_voltage if vehicle else 35.0))
+    temp = simulator.avg_temperature if is_sim_vehicle else (pack.avg_temperature if pack else 23.6)
+    imp = simulator.total_impedance if is_sim_vehicle else (pack.total_impedance if pack else 0.1085)
+    rng = simulator.range_km if is_sim_vehicle else (pack.estimated_range_km if pack else 48.0)
     
     orig_ah = vehicle.original_capacity_ah if vehicle else 100.0
     curr_ah = round((soh / 100.0) * orig_ah, 1)
@@ -44,11 +45,11 @@ async def get_battery_health(vehicle_id: str, db: AsyncSession = Depends(get_db)
     summary = battery_service.compute_degradation_summary(curr_ah, orig_ah)
     
     cell_responses = []
-    if vehicle and vehicle.vin == "KA05ER7777" and simulator.cells:
+    if is_sim_vehicle and simulator.cells:
         for idx, c in enumerate(simulator.cells, start=1):
             cell_responses.append(BatteryCellResponse(
                 id=f"sim-cell-{idx}",
-                vehicle_id=vehicle.id,
+                vehicle_id=vehicle.id if vehicle else vehicle_id,
                 cell_index=c["cell_index"],
                 cell_serial=f"CEL-8840-{idx:02d}",
                 voltage=c["voltage"],
@@ -89,13 +90,29 @@ async def get_battery_health(vehicle_id: str, db: AsyncSession = Depends(get_db)
 @router.get("/{vehicle_id}/degradation")
 async def get_degradation_trend(
     vehicle_id: str,
-    period: str = Query("6months", description="7days, 30days, 6months, 12months")
+    period: str = Query("6months", description="7days, 30days, 6months, 12months"),
+    db: AsyncSession = Depends(get_db)
 ):
-    return battery_service.get_degradation_history(period)
+    result = await db.execute(
+        select(Vehicle).options(selectinload(Vehicle.pack)).where(
+            (Vehicle.id == vehicle_id) | (Vehicle.vin == vehicle_id)
+        )
+    )
+    vehicle = result.scalar_one_or_none()
+    current_ah = vehicle.current_capacity_ah if vehicle else 88.4
+    original_ah = vehicle.original_capacity_ah if vehicle else 100.0
+    return battery_service.get_degradation_history(period, current_ah=current_ah, original_ah=original_ah)
 
 @router.get("/{vehicle_id}/temperature-trend")
-async def get_temperature_trend(vehicle_id: str):
-    return battery_service.get_temperature_history()
+async def get_temperature_trend(vehicle_id: str, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(
+        select(Vehicle).options(selectinload(Vehicle.pack)).where(
+            (Vehicle.id == vehicle_id) | (Vehicle.vin == vehicle_id)
+        )
+    )
+    vehicle = result.scalar_one_or_none()
+    base_temp = vehicle.pack.avg_temperature if (vehicle and vehicle.pack) else 23.6
+    return battery_service.get_temperature_history(base_temp=base_temp)
 
 @router.get("/{vehicle_id}/cells", response_model=List[BatteryCellResponse])
 async def get_cells(vehicle_id: str, db: AsyncSession = Depends(get_db)):

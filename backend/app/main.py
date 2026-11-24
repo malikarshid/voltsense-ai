@@ -54,10 +54,10 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 @app.websocket("/ws/monitoring/{vehicle_id}")
 async def websocket_monitoring_endpoint(websocket: WebSocket, vehicle_id: str):
     await websocket.accept()
-    simulator.connect_ws(websocket)
+    simulator.connect_ws(websocket, vehicle_id)
     try:
-        # Send immediate initial frame
-        latest = await simulator.step()
+        # Send immediate initial frame for requested vehicle
+        latest = await simulator.step(vehicle_id)
         await websocket.send_json(latest)
         while True:
             # Keep socket open and accept incoming command messages if any

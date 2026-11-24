@@ -15,6 +15,8 @@ interface VehicleContextType {
   resetSimulation: () => Promise<void>;
   refreshVehicles: () => Promise<void>;
   loading: boolean;
+  isMobileMenuOpen: boolean;
+  setIsMobileMenuOpen: (open: boolean) => void;
 }
 
 const VehicleContext = createContext<VehicleContextType | undefined>(undefined);
@@ -25,6 +27,7 @@ export const VehicleProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [activeScenario, setActiveScenarioState] = useState<string>('normal');
   const [isSimulating, setIsSimulating] = useState<boolean>(true);
   const [loading, setLoading] = useState<boolean>(true);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
 
   const refreshVehicles = async () => {
     try {
@@ -92,6 +95,8 @@ export const VehicleProvider: React.FC<{ children: React.ReactNode }> = ({ child
         resetSimulation,
         refreshVehicles,
         loading,
+        isMobileMenuOpen,
+        setIsMobileMenuOpen,
       }}
     >
       {children}

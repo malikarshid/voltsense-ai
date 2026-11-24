@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Settings, Sliders, Radio, Bell, Shield, Server, Check } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { fetchSettings, updateSettings } from '@/lib/api';
+import { Radio, Shield, Check, Server, RefreshCw } from 'lucide-react';
 
 export default function SettingsPage() {
   const [refreshRate, setRefreshRate] = useState(1000);
@@ -9,11 +10,42 @@ export default function SettingsPage() {
   const [tempWarning, setTempWarning] = useState(45.0);
   const [voltWarning, setVoltWarning] = useState(3.20);
   const [saved, setSaved] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const handleSave = (e: React.FormEvent) => {
+  useEffect(() => {
+    async function load() {
+      try {
+        setLoading(true);
+        const data = await fetchSettings();
+        if (data) {
+          setRefreshRate(data.refresh_rate_ms || 1000);
+          setMqttBroker(data.mqtt_broker_url || 'mqtt://localhost:1883');
+          setTempWarning(data.temp_warning_threshold_c || 45.0);
+          setVoltWarning(data.voltage_warning_threshold_v || 3.20);
+        }
+      } catch (err) {
+        console.error('Error loading settings:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, []);
+
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+    try {
+      await updateSettings({
+        refresh_rate_ms: refreshRate,
+        mqtt_broker_url: mqttBroker,
+        temp_warning_threshold_c: tempWarning,
+        voltage_warning_threshold_v: voltWarning,
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch (err) {
+      console.error('Error saving settings:', err);
+    }
   };
 
   return (
@@ -112,9 +144,9 @@ export default function SettingsPage() {
         {/* Save Button */}
         <div className="flex items-center justify-end gap-4">
           {saved && (
-            <span className="text-xs text-[#55D889] flex items-center gap-1">
+            <span className="text-xs text-[#55D889] flex items-center gap-1 font-semibold">
               <Check className="w-4 h-4" />
-              Settings successfully updated!
+              Settings successfully saved to backend!
             </span>
           )}
           <button

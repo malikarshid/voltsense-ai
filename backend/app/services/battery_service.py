@@ -57,8 +57,6 @@ class BatteryService:
         session.add(pack1)
 
         # 10 Cells for Vehicle 1 (matching Reference 1 & Reference 3)
-        # Reference 3 shows: Cell 01 WARNING (10.9V / 0.0691 ohm), Cell 02 HEALTHY (12.6V), Cell 03 HEALTHY (11.5V)
-        # Scaled to cell level 3.56V - 3.62V nominal
         cell_configs = [
             {"idx": 1, "v": 3.56, "t": 25.2, "r": 0.0691, "status": "WARNING"},
             {"idx": 2, "v": 3.62, "t": 20.5, "r": 0.0247, "status": "HEALTHY"},
@@ -127,9 +125,9 @@ class BatteryService:
                 vehicle_id=v2.id,
                 cell_index=i,
                 cell_serial=f"CYB-9200-{i:02d}",
-                voltage=3.98 + random.uniform(-0.01, 0.01),
-                temperature=24.0 + random.uniform(0.1, 0.8),
-                internal_resistance=0.014 + random.uniform(0.001, 0.003),
+                voltage=round(3.98 + random.uniform(-0.01, 0.01), 2),
+                temperature=round(24.0 + random.uniform(0.1, 0.8), 1),
+                internal_resistance=round(0.014 + random.uniform(0.001, 0.003), 4),
                 status="HEALTHY"
             )
             session.add(cell)
@@ -160,66 +158,69 @@ class BatteryService:
         return v1
 
     @staticmethod
-    def get_degradation_history(period: str = "6months") -> List[Dict[str, Any]]:
-        """Exact degradation trend matching Reference 1 (Last 6 Months: Nov '23 to May '24)."""
+    def get_degradation_history(period: str = "6months", current_ah: float = 88.4, original_ah: float = 100.0) -> List[Dict[str, Any]]:
+        """Degradation trend matching Reference 1 with dynamic scaling per vehicle."""
+        soh = (current_ah / original_ah) * 100.0
+        delta = round(original_ah - current_ah, 1)
+
         if period == "7days":
             return [
-                {"date": "Day 1", "capacity_ah": 88.45, "soh_pct": 88.45},
-                {"date": "Day 2", "capacity_ah": 88.44, "soh_pct": 88.44},
-                {"date": "Day 3", "capacity_ah": 88.43, "soh_pct": 88.43},
-                {"date": "Day 4", "capacity_ah": 88.42, "soh_pct": 88.42},
-                {"date": "Day 5", "capacity_ah": 88.41, "soh_pct": 88.41},
-                {"date": "Day 6", "capacity_ah": 88.40, "soh_pct": 88.40},
-                {"date": "Day 7", "capacity_ah": 88.40, "soh_pct": 88.40},
+                {"date": "Day 1", "capacity_ah": round(current_ah + 0.05, 2), "soh_pct": round(soh + 0.05, 2)},
+                {"date": "Day 2", "capacity_ah": round(current_ah + 0.04, 2), "soh_pct": round(soh + 0.04, 2)},
+                {"date": "Day 3", "capacity_ah": round(current_ah + 0.03, 2), "soh_pct": round(soh + 0.03, 2)},
+                {"date": "Day 4", "capacity_ah": round(current_ah + 0.02, 2), "soh_pct": round(soh + 0.02, 2)},
+                {"date": "Day 5", "capacity_ah": round(current_ah + 0.01, 2), "soh_pct": round(soh + 0.01, 2)},
+                {"date": "Day 6", "capacity_ah": round(current_ah, 2), "soh_pct": round(soh, 2)},
+                {"date": "Day 7", "capacity_ah": round(current_ah, 2), "soh_pct": round(soh, 2)},
             ]
         elif period == "30days":
             return [
-                {"date": "Week 1", "capacity_ah": 89.2, "soh_pct": 89.2},
-                {"date": "Week 2", "capacity_ah": 88.9, "soh_pct": 88.9},
-                {"date": "Week 3", "capacity_ah": 88.6, "soh_pct": 88.6},
-                {"date": "Week 4", "capacity_ah": 88.4, "soh_pct": 88.4},
+                {"date": "Week 1", "capacity_ah": round(current_ah + (delta * 0.15), 1), "soh_pct": round(soh + 1.2, 1)},
+                {"date": "Week 2", "capacity_ah": round(current_ah + (delta * 0.10), 1), "soh_pct": round(soh + 0.8, 1)},
+                {"date": "Week 3", "capacity_ah": round(current_ah + (delta * 0.05), 1), "soh_pct": round(soh + 0.4, 1)},
+                {"date": "Week 4", "capacity_ah": round(current_ah, 1), "soh_pct": round(soh, 1)},
             ]
         elif period == "12months":
             return [
-                {"date": "Jun '23", "capacity_ah": 100.0, "soh_pct": 100.0},
-                {"date": "Aug '23", "capacity_ah": 99.1, "soh_pct": 99.1},
-                {"date": "Oct '23", "capacity_ah": 98.0, "soh_pct": 98.0},
-                {"date": "Dec '23", "capacity_ah": 96.5, "soh_pct": 96.5},
-                {"date": "Feb '24", "capacity_ah": 94.2, "soh_pct": 94.2},
-                {"date": "Apr '24", "capacity_ah": 91.0, "soh_pct": 91.0},
-                {"date": "May '24", "capacity_ah": 88.4, "soh_pct": 88.4},
+                {"date": "Jun '23", "capacity_ah": round(original_ah, 1), "soh_pct": 100.0},
+                {"date": "Aug '23", "capacity_ah": round(original_ah - delta * 0.15, 1), "soh_pct": round(100.0 - (delta * 0.15), 1)},
+                {"date": "Oct '23", "capacity_ah": round(original_ah - delta * 0.35, 1), "soh_pct": round(100.0 - (delta * 0.35), 1)},
+                {"date": "Dec '23", "capacity_ah": round(original_ah - delta * 0.55, 1), "soh_pct": round(100.0 - (delta * 0.55), 1)},
+                {"date": "Feb '24", "capacity_ah": round(original_ah - delta * 0.75, 1), "soh_pct": round(100.0 - (delta * 0.75), 1)},
+                {"date": "Apr '24", "capacity_ah": round(original_ah - delta * 0.90, 1), "soh_pct": round(100.0 - (delta * 0.90), 1)},
+                {"date": "May '24", "capacity_ah": round(current_ah, 1), "soh_pct": round(soh, 1)},
             ]
         else:
-            # 6 Months - exact curve from Reference 1
+            # 6 Months - Reference 1 profile scaled to vehicle
             return [
-                {"date": "Nov '23", "capacity_ah": 100.0, "soh_pct": 100.0},
-                {"date": "Dec '23", "capacity_ah": 98.7, "soh_pct": 98.7},
-                {"date": "Jan '24", "capacity_ah": 97.1, "soh_pct": 97.1},
-                {"date": "Feb '24", "capacity_ah": 95.3, "soh_pct": 95.3},
-                {"date": "Mar '24", "capacity_ah": 93.4, "soh_pct": 93.4},
-                {"date": "Apr '24", "capacity_ah": 91.6, "soh_pct": 91.6},
-                {"date": "May '24", "capacity_ah": 88.4, "soh_pct": 88.4},
+                {"date": "Nov '23", "capacity_ah": round(original_ah, 1), "soh_pct": 100.0},
+                {"date": "Dec '23", "capacity_ah": round(original_ah - delta * 0.12, 1), "soh_pct": round(100.0 - (delta * 0.12), 1)},
+                {"date": "Jan '24", "capacity_ah": round(original_ah - delta * 0.28, 1), "soh_pct": round(100.0 - (delta * 0.28), 1)},
+                {"date": "Feb '24", "capacity_ah": round(original_ah - delta * 0.48, 1), "soh_pct": round(100.0 - (delta * 0.48), 1)},
+                {"date": "Mar '24", "capacity_ah": round(original_ah - delta * 0.68, 1), "soh_pct": round(100.0 - (delta * 0.68), 1)},
+                {"date": "Apr '24", "capacity_ah": round(original_ah - delta * 0.85, 1), "soh_pct": round(100.0 - (delta * 0.85), 1)},
+                {"date": "May '24", "capacity_ah": round(current_ah, 1), "soh_pct": round(soh, 1)},
             ]
 
     @staticmethod
-    def get_temperature_history() -> List[Dict[str, Any]]:
+    def get_temperature_history(base_temp: float = 23.6) -> List[Dict[str, Any]]:
         """Temperature trend matching Reference 1 (Last 7 Days, optimal range 15°C - 45°C)."""
+        offset = base_temp - 23.6
         return [
-            {"day": "May 6", "temperature": 23.5, "optimal_min": 15, "optimal_max": 45},
-            {"day": "May 7", "temperature": 27.2, "optimal_min": 15, "optimal_max": 45},
-            {"day": "May 8", "temperature": 24.8, "optimal_min": 15, "optimal_max": 45},
-            {"day": "May 9", "temperature": 32.0, "optimal_min": 15, "optimal_max": 45, "tooltip": "May 9 - 12:30 PM (32°C)"},
-            {"day": "May 10", "temperature": 25.1, "optimal_min": 15, "optimal_max": 45},
-            {"day": "May 11", "temperature": 26.4, "optimal_min": 15, "optimal_max": 45},
-            {"day": "May 12", "temperature": 23.6, "optimal_min": 15, "optimal_max": 45},
+            {"day": "May 6", "temperature": round(23.5 + offset, 1), "optimal_min": 15, "optimal_max": 45},
+            {"day": "May 7", "temperature": round(27.2 + offset, 1), "optimal_min": 15, "optimal_max": 45},
+            {"day": "May 8", "temperature": round(24.8 + offset, 1), "optimal_min": 15, "optimal_max": 45},
+            {"day": "May 9", "temperature": round(32.0 + offset, 1), "optimal_min": 15, "optimal_max": 45, "tooltip": f"May 9 - 12:30 PM ({round(32.0 + offset, 1)}°C)"},
+            {"day": "May 10", "temperature": round(25.1 + offset, 1), "optimal_min": 15, "optimal_max": 45},
+            {"day": "May 11", "temperature": round(26.4 + offset, 1), "optimal_min": 15, "optimal_max": 45},
+            {"day": "May 12", "temperature": round(base_temp, 1), "optimal_min": 15, "optimal_max": 45},
         ]
 
     @staticmethod
     def compute_degradation_summary(current_ah: float, original_ah: float) -> DegradationSummary:
         loss_ah = round(original_ah - current_ah, 1)
         loss_pct = round((loss_ah / original_ah) * 100, 1)
-        # Average monthly degradation over 6 months:
-        avg_monthly = round(loss_pct / 6.0, 1)
+        avg_monthly = round(loss_pct / 6.0, 1) if loss_pct > 0 else 0.2
         proj_min = round(current_ah - (avg_monthly * 12 * 0.45), 0)
         proj_max = round(current_ah - (avg_monthly * 12 * 0.35), 0)
 
@@ -229,7 +230,7 @@ class BatteryService:
             avg_monthly_degradation_pct=avg_monthly,
             projected_capacity_1yr_min_ah=proj_min,
             projected_capacity_1yr_max_ah=proj_max,
-            performance_status="Battery is performing within optimal range.",
+            performance_status="Battery is performing within optimal range." if (current_ah / original_ah) >= 0.8 else "Battery approaching advisory degradation envelope.",
             soh_formula="SOH (%) = (Current Measured Capacity / Original Capacity) × 100"
         )
 

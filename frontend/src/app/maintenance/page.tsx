@@ -7,7 +7,7 @@ import { MaintenanceRecord } from '@/types';
 import { Wrench, Plus, CheckCircle, Clock, AlertTriangle, UserCheck } from 'lucide-react';
 
 export default function MaintenancePage() {
-  const { selectedVehicle } = useVehicle();
+  const { selectedVehicle, vehicles } = useVehicle();
   const vehicleId = selectedVehicle?.vin || 'KA05ER7777';
 
   const [records, setRecords] = useState<MaintenanceRecord[]>([]);
@@ -32,9 +32,11 @@ export default function MaintenancePage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
+    const targetVehicleId = selectedVehicle?.id || (vehicles.length > 0 ? vehicles[0].id : '');
+    if (!targetVehicleId) return;
     try {
       await createMaintenance({
-        vehicle_id: selectedVehicle?.id || '61544df9-c754-4c49-bac3-6097e6a3a43d',
+        vehicle_id: targetVehicleId,
         title,
         priority,
         technician,

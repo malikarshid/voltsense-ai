@@ -48,9 +48,9 @@ export default function AnalyticsPage() {
   }, [vehicleId]);
 
   const stateData = [
-    { name: 'Driving / Discharge', value: 22.4, color: '#4C9FFF' },
-    { name: 'DC/AC Charging', value: 14.8, color: '#55D889' },
-    { name: 'Parked / Standby', value: 62.8, color: '#172337' },
+    { name: 'Driving / Discharge', value: analytics?.state_distribution?.driving ?? 22.4, color: '#4C9FFF' },
+    { name: 'DC/AC Charging', value: analytics?.state_distribution?.charging ?? 14.8, color: '#55D889' },
+    { name: 'Parked / Standby', value: analytics?.state_distribution?.idle ?? 62.8, color: '#172337' },
   ];
 
   return (

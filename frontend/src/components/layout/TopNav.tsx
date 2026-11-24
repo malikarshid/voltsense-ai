@@ -8,13 +8,13 @@ import {
   RefreshCw,
   Bell,
   User,
-  Radio,
   SlidersHorizontal,
   ChevronDown,
   Car,
   Play,
   Square,
   AlertCircle,
+  Menu,
 } from 'lucide-react';
 
 export const TopNav: React.FC = () => {
@@ -28,6 +28,7 @@ export const TopNav: React.FC = () => {
     isSimulating,
     toggleSimulation,
     resetSimulation,
+    setIsMobileMenuOpen,
   } = useVehicle();
 
   const [currentTime, setCurrentTime] = useState('');
@@ -56,7 +57,6 @@ export const TopNav: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Format breadcrumb title from path
   const getPageTitle = () => {
     if (pathname === '/') return 'Dashboard';
     const clean = pathname.replace('/', '').replace('-', ' ');
@@ -64,10 +64,18 @@ export const TopNav: React.FC = () => {
   };
 
   return (
-    <header className="sticky top-0 z-30 h-16 bg-[#080D18]/90 backdrop-blur-md border-b border-[#263449] px-6 flex items-center justify-between">
-      {/* Left Breadcrumb & Vehicle ID */}
+    <header className="sticky top-0 z-30 h-16 bg-[#080D18]/90 backdrop-blur-md border-b border-[#263449] px-4 md:px-6 flex items-center justify-between">
+      {/* Left: Hamburger (Mobile) + Breadcrumb & Vehicle ID */}
       <div className="flex items-center gap-3">
-        <div className="flex items-center text-xs text-[#9BA9BB]">
+        <button
+          onClick={() => setIsMobileMenuOpen(true)}
+          className="md:hidden p-2 rounded-lg bg-[#111B2B] border border-[#263449] text-[#9BA9BB] hover:text-white"
+          title="Open Navigation Menu"
+        >
+          <Menu className="w-4 h-4" />
+        </button>
+
+        <div className="hidden sm:flex items-center text-xs text-[#9BA9BB]">
           <span>Vehicles</span>
           <span className="mx-2 text-[#263449]">&gt;</span>
           <span className="text-[#55D889] font-medium">
@@ -78,22 +86,23 @@ export const TopNav: React.FC = () => {
         </div>
 
         {/* Simulation Mode Badge */}
-        <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#F4C44E]/10 border border-[#F4C44E]/30 text-[#F4C44E] text-[11px] font-semibold">
+        <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#F4C44E]/10 border border-[#F4C44E]/30 text-[#F4C44E] text-[11px] font-semibold">
           <AlertCircle className="w-3.5 h-3.5 animate-pulse" />
           <span>SIMULATION MODE (CAN-BMS Synthetic)</span>
         </div>
       </div>
 
-      {/* Right Controls: Vehicle Selector, Scenario, Simulator controls, Clock, User */}
-      <div className="flex items-center gap-3">
+      {/* Right Controls */}
+      <div className="flex items-center gap-2 sm:gap-3">
         {/* Vehicle Selector Dropdown */}
         <div className="relative">
           <button
             onClick={() => setShowVehicleMenu(!showVehicleMenu)}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#111B2B] hover:bg-[#172337] border border-[#263449] text-xs font-medium text-[#F4F7FB] transition-colors"
+            className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-lg bg-[#111B2B] hover:bg-[#172337] border border-[#263449] text-xs font-medium text-[#F4F7FB] transition-colors"
           >
             <Car className="w-3.5 h-3.5 text-[#55D889]" />
-            <span>{selectedVehicle ? selectedVehicle.name : 'Select Vehicle'}</span>
+            <span className="hidden sm:inline">{selectedVehicle ? selectedVehicle.name : 'Select Vehicle'}</span>
+            <span className="sm:hidden">{selectedVehicle ? selectedVehicle.vin.slice(0, 6) : 'Fleet'}</span>
             <ChevronDown className="w-3 h-3 text-[#9BA9BB]" />
           </button>
           {showVehicleMenu && (
@@ -124,11 +133,12 @@ export const TopNav: React.FC = () => {
         <div className="relative">
           <button
             onClick={() => setShowScenarioMenu(!showScenarioMenu)}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#111B2B] hover:bg-[#172337] border border-[#263449] text-xs font-medium text-[#F4F7FB]"
+            className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-lg bg-[#111B2B] hover:bg-[#172337] border border-[#263449] text-xs font-medium text-[#F4F7FB]"
             title="Inject real-time operational simulation scenario"
           >
             <SlidersHorizontal className="w-3.5 h-3.5 text-[#4C9FFF]" />
-            <span className="capitalize">Scenario: {activeScenario.replace('_', ' ')}</span>
+            <span className="hidden md:inline capitalize">Scenario: {activeScenario.replace('_', ' ')}</span>
+            <span className="md:hidden capitalize">{activeScenario.slice(0, 4)}</span>
             <ChevronDown className="w-3 h-3 text-[#9BA9BB]" />
           </button>
           {showScenarioMenu && (
@@ -137,8 +147,8 @@ export const TopNav: React.FC = () => {
                 { id: 'normal', label: '1. Normal Driving' },
                 { id: 'charging', label: '2. DC Fast Charging' },
                 { id: 'discharging', label: '3. Heavy Acceleration' },
-                { id: 'high_temp', label: '4. Thermal Stress (High Temp)' },
-                { id: 'cell_imbalance', label: '5. Cell 1 Imbalance Sag' },
+                { id: 'high_temp', label: '4. Thermal Stress' },
+                { id: 'cell_imbalance', label: '5. Cell 1 Imbalance' },
                 { id: 'voltage_anomaly', label: '6. Voltage Anomaly' },
                 { id: 'comm_fail', label: '7. BMS Comm Drop' },
               ].map((s) => (
@@ -180,7 +190,7 @@ export const TopNav: React.FC = () => {
         </div>
 
         {/* Live Date/Time Badge */}
-        <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#111B2B] border border-[#263449] text-xs text-[#9BA9BB]">
+        <div className="hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#111B2B] border border-[#263449] text-xs text-[#9BA9BB]">
           <Calendar className="w-3.5 h-3.5 text-[#55D889]" />
           <span>{currentTime || 'Syncing clock...'}</span>
         </div>
@@ -196,7 +206,7 @@ export const TopNav: React.FC = () => {
           <div className="w-8 h-8 rounded-full bg-[#172337] border border-[#55D889]/40 flex items-center justify-center text-[#55D889]">
             <User className="w-4 h-4" />
           </div>
-          <div className="hidden sm:flex flex-col">
+          <div className="hidden lg:flex flex-col">
             <span className="text-xs font-semibold text-[#F4F7FB]">Lead BMS Operator</span>
             <span className="text-[10px] text-[#55D889]">Online • CAN Active</span>
           </div>

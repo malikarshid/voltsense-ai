@@ -8,7 +8,7 @@ router = APIRouter(prefix="/monitoring", tags=["Live Monitoring"])
 @router.get("/{vehicle_id}/latest")
 async def get_latest_telemetry(vehicle_id: str):
     """Returns current real-time telemetry frame matching Reference 3."""
-    return await simulator.step()
+    return await simulator.step(vehicle_id)
 
 @router.get("/{vehicle_id}/history")
 async def get_telemetry_history(vehicle_id: str):
