@@ -1,9 +1,9 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
+import { ThemeProvider } from '@/context/ThemeContext';
 import { VehicleProvider } from '@/context/VehicleContext';
-import { Sidebar } from '@/components/layout/Sidebar';
-import { TopNav } from '@/components/layout/TopNav';
+import { MainLayout } from '@/components/layout/MainLayout';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -18,19 +18,30 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark">
-      <body className={`${inter.className} bg-[#080D18] text-[#F4F7FB] min-h-screen antialiased`}>
-        <VehicleProvider>
-          <div className="flex min-h-screen">
-            <Sidebar />
-            <div className="flex-1 md:ml-64 flex flex-col min-w-0 transition-all duration-300">
-              <TopNav />
-              <main className="flex-1 p-4 md:p-6 overflow-y-auto">
-                {children}
-              </main>
-            </div>
-          </div>
-        </VehicleProvider>
+    <html lang="en" data-theme="day" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                var theme = localStorage.getItem('voltsense_theme') || 'day';
+                document.documentElement.setAttribute('data-theme', theme);
+                if (theme === 'dark') {
+                  document.documentElement.classList.add('dark');
+                } else {
+                  document.documentElement.classList.remove('dark');
+                }
+              } catch (e) {}
+            `,
+          }}
+        />
+      </head>
+      <body className={`${inter.className} bg-background text-primary-text min-h-screen antialiased`}>
+        <ThemeProvider>
+          <VehicleProvider>
+            <MainLayout>{children}</MainLayout>
+          </VehicleProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -11,6 +11,7 @@ import {
   CartesianGrid,
   ReferenceLine,
 } from 'recharts';
+import { useTheme } from '@/context/ThemeContext';
 
 interface RealtimeSensorChartProps {
   title: string;
@@ -30,47 +31,57 @@ export const RealtimeSensorChart: React.FC<RealtimeSensorChartProps> = ({
   data,
   minThreshold,
   maxThreshold,
-  strokeColor = '#4C9FFF',
+  strokeColor,
   yDomain,
 }) => {
+  const { colors } = useTheme();
+  const activeStroke = strokeColor || colors.accentSecondary;
+
   return (
-    <div className="glass-card p-3.5 flex flex-col justify-between h-44">
-      <div className="flex items-center justify-between text-xs mb-1">
-        <span className="font-semibold text-[#F4F7FB]">{title}</span>
-        <div className="text-[10px] text-[#9BA9BB] space-x-2">
+    <div className="surface-card p-3 flex flex-col justify-between h-40">
+      <div className="flex items-center justify-between text-xs mb-1 pb-1 border-b border-border">
+        <span className="font-medium text-primary-text">{title}</span>
+        <div className="text-[10px] text-text-muted space-x-2 font-mono">
           {minThreshold !== undefined && <span>Min: {minThreshold}{unit}</span>}
           {maxThreshold !== undefined && (
-            <span className="text-[#EF6262]">Max: {maxThreshold}{unit}</span>
+            <span style={{ color: colors.statusCritical }}>Max: {maxThreshold}{unit}</span>
           )}
         </div>
       </div>
 
-      <div className="w-full h-32">
+      <div className="w-full h-28">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="2 2" stroke="#263449" vertical={false} />
+          <LineChart data={data} margin={{ top: 5, right: 10, left: -25, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="2 2" stroke={colors.gridColor} vertical={false} />
             <XAxis dataKey="time" hide />
             <YAxis
               domain={yDomain || ['auto', 'auto']}
-              stroke="#9BA9BB"
-              fontSize={9}
+              stroke={colors.textMuted}
+              fontSize={10}
               tickLine={false}
               axisLine={false}
               tickFormatter={(v) => `${v}`}
             />
             {minThreshold !== undefined && (
-              <ReferenceLine y={minThreshold} stroke="#F4C44E" strokeDasharray="3 3" />
+              <ReferenceLine y={minThreshold} stroke={colors.statusWarning} strokeDasharray="2 2" />
             )}
             {maxThreshold !== undefined && (
-              <ReferenceLine y={maxThreshold} stroke="#EF6262" strokeDasharray="3 3" />
+              <ReferenceLine y={maxThreshold} stroke={colors.statusCritical} strokeDasharray="2 2" />
             )}
             <Tooltip
               content={({ active, payload }) => {
                 if (active && payload && payload.length) {
                   return (
-                    <div className="bg-[#111B2B] border border-[#263449] p-1.5 rounded text-[10px] text-[#F4F7FB]">
+                    <div
+                      className="p-1.5 rounded-[4px] text-[10px] shadow-subtle font-mono border"
+                      style={{
+                        backgroundColor: colors.bgSurface,
+                        borderColor: colors.border,
+                        color: colors.textPrimary,
+                      }}
+                    >
                       <div>{payload[0].payload.time}</div>
-                      <div className="font-bold text-[#55D889]">
+                      <div className="font-bold" style={{ color: colors.accentPrimary }}>
                         {payload[0].value} {unit}
                       </div>
                     </div>
@@ -82,7 +93,7 @@ export const RealtimeSensorChart: React.FC<RealtimeSensorChartProps> = ({
             <Line
               type="monotone"
               dataKey={dataKey}
-              stroke={strokeColor}
+              stroke={activeStroke}
               strokeWidth={1.5}
               dot={false}
               isAnimationActive={false}

@@ -2,17 +2,21 @@
 
 import React from 'react';
 import { useVehicle } from '@/context/VehicleContext';
-import { getDownloadReportUrl } from '@/lib/api';
-import { FileText, Download, CheckCircle, Shield, Calendar, ArrowRight } from 'lucide-react';
+import { getDownloadReportUrl, getDownloadCsvReportUrl } from '@/lib/api';
+import { FileText, Download, FileSpreadsheet, ShieldCheck } from 'lucide-react';
 
 export default function ReportsPage() {
   const { selectedVehicle } = useVehicle();
   const vehicleId = selectedVehicle?.vin || 'KA05ER7777';
 
+  const handleExportCsv = () => {
+    window.open(getDownloadCsvReportUrl(vehicleId), '_blank');
+  };
+
   const reportsList = [
     {
       id: 'REP-2024-05-12',
-      title: 'Comprehensive Battery Health & Degradation Audit',
+      title: 'Certified Battery Health & Degradation Audit',
       type: 'HEALTH_DIAGNOSTIC',
       date: 'May 12, 2024',
       size: '5.4 KB',
@@ -28,7 +32,7 @@ export default function ReportsPage() {
     },
     {
       id: 'REP-2024-03-01',
-      title: 'Quarterly Fast-Charging Thermal Stress Report',
+      title: 'Fast-Charging Thermal Dissipation Audit',
       type: 'FLEET_AUDIT',
       date: 'March 01, 2024',
       size: '5.6 KB',
@@ -37,76 +41,97 @@ export default function ReportsPage() {
   ];
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-8">
+    <div className="space-y-6 max-w-7xl mx-auto pb-10">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-border">
         <div>
-          <h1 className="text-2xl font-bold text-[#F4F7FB] tracking-tight flex items-center gap-2">
+          <h1 className="text-xl font-bold text-primary-text tracking-tight flex items-center gap-2">
             Engineering Reports & Audit Center
           </h1>
-          <p className="text-xs text-[#9BA9BB]">
-            Download certified PDF health assessments for warranty, service records and fleet management
+          <p className="text-xs text-text-muted">
+            Download certified PDF health assessments for warranty verification, service records, and fleet compliance
           </p>
         </div>
-        <a
-          href={getDownloadReportUrl(vehicleId)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#55D889] hover:bg-[#32B96F] text-xs font-bold text-[#080D18] transition-colors"
-        >
-          <Download className="w-4 h-4" />
-          <span>Generate Live PDF Report</span>
-        </a>
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={handleExportCsv}
+            className="btn-standard bg-surface-primary hover:bg-surface-secondary text-primary-text border border-border hover:border-accent-primary shadow-subtle"
+          >
+            <FileSpreadsheet className="w-4 h-4 text-accent-secondary" />
+            <span>Export CSV Dataset</span>
+          </button>
+          <a
+            href={getDownloadReportUrl(vehicleId)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-standard bg-surface-primary hover:bg-surface-secondary text-primary-text border border-border hover:border-accent-primary shadow-subtle"
+          >
+            <Download className="w-4 h-4 text-accent-primary" />
+            <span>Generate Live PDF</span>
+          </a>
+        </div>
       </div>
 
       {/* Hero Report Card */}
-      <div className="glass-card p-6 border border-[#55D889]/40 bg-gradient-to-r from-[#111B2B] to-[#172337]/50 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-6">
+      <div className="surface-card p-6 border border-border flex flex-col md:flex-row items-center justify-between gap-6 shadow-subtle">
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#55D889]/20 text-[#55D889] border border-[#55D889]/40">
-              Latest Live Certified Report
+            <span className="px-2.5 py-0.5 rounded-[4px] text-[11px] font-mono font-medium bg-surface-secondary text-accent-primary border border-border">
+              Certified Telemetry Snapshot
             </span>
-            <span className="text-xs text-[#9BA9BB] font-mono">VIN: {vehicleId}</span>
+            <span className="text-xs text-text-muted font-mono">Asset VIN: {vehicleId}</span>
           </div>
-          <h2 className="text-xl font-bold text-[#F4F7FB]">
+          <h2 className="text-lg font-bold text-primary-text">
             Automotive Battery Health & Predictive Diagnostic Report
           </h2>
-          <p className="text-xs text-[#9BA9BB] max-w-xl leading-relaxed">
-            Includes State of Health (SOH: 88.4%), State of Charge (SOC: 67%), 10-cell sub-module voltages, internal impedance distribution, degradation trajectory, and AI predictive maintenance recommendations.
+          <p className="text-xs text-text-secondary max-w-xl leading-relaxed">
+            Includes State of Health (SOH: 88.4%), State of Charge (SOC: 67%), 10-cell sub-module voltages, internal impedance distribution, degradation trajectory, and AI predictive maintenance actions.
           </p>
         </div>
-        <a
-          href={getDownloadReportUrl(vehicleId)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex-shrink-0 px-6 py-3 rounded-xl bg-[#55D889] hover:bg-[#32B96F] text-[#080D18] text-sm font-bold flex items-center gap-2 shadow-glow-green transition-all"
-        >
-          <Download className="w-4 h-4" />
-          <span>Download PDF</span>
-        </a>
+        <div className="flex items-center gap-3 flex-shrink-0">
+          <button
+            onClick={handleExportCsv}
+            className="btn-standard bg-surface-secondary hover:bg-surface-elevated text-primary-text border border-border font-medium shadow-subtle"
+          >
+            <FileSpreadsheet className="w-4 h-4 text-accent-secondary" />
+            <span>CSV Dataset</span>
+          </button>
+          <a
+            href={getDownloadReportUrl(vehicleId)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-standard bg-accent-primary hover:opacity-90 text-white font-semibold shadow-subtle"
+          >
+            <Download className="w-4 h-4 text-white" />
+            <span>Download PDF</span>
+          </a>
+        </div>
       </div>
 
       {/* Historical Report Archive */}
-      <div className="glass-card p-5 space-y-4">
-        <h3 className="text-sm font-semibold text-[#F4F7FB]">
-          Generated Report History
-        </h3>
+      <div className="surface-card p-4 space-y-3">
+        <div className="border-b border-border/60 pb-2">
+          <h3 className="text-sm font-semibold text-primary-text">
+            Generated Report Archive
+          </h3>
+          <p className="text-xs text-text-muted">Historical audits generated for this asset</p>
+        </div>
         <div className="space-y-2">
           {reportsList.map((rep) => (
             <div
               key={rep.id}
-              className="p-4 rounded-xl bg-[#172337]/40 border border-[#263449] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 hover:border-[#3b506d] transition-colors"
+              className="p-3 rounded-[6px] bg-surface-secondary border border-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 hover:border-accent-secondary transition-colors"
             >
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-lg bg-[#111B2B] text-[#55D889] border border-[#263449]">
-                  <FileText className="w-5 h-5" />
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-[4px] bg-surface-primary text-accent-primary border border-border">
+                  <FileText className="w-4 h-4" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-[#F4F7FB]">{rep.title}</h4>
-                  <div className="text-xs text-[#9BA9BB] flex items-center gap-3 mt-0.5">
+                  <h4 className="text-xs font-semibold text-primary-text">{rep.title}</h4>
+                  <div className="text-[11px] text-text-muted flex items-center gap-2.5 mt-0.5 font-mono">
                     <span>{rep.date}</span>
                     <span>•</span>
-                    <span className="font-mono">{rep.id}</span>
+                    <span>{rep.id}</span>
                     <span>•</span>
                     <span>{rep.size}</span>
                   </div>
@@ -116,7 +141,7 @@ export default function ReportsPage() {
                 href={getDownloadReportUrl(vehicleId)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#111B2B] hover:bg-[#172337] border border-[#263449] text-xs font-semibold text-[#55D889] transition-colors"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-[4px] bg-surface-primary hover:bg-surface-elevated border border-border text-xs font-medium text-accent-primary transition-colors"
               >
                 <Download className="w-3.5 h-3.5" />
                 <span>Download</span>

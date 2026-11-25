@@ -1,23 +1,24 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useVehicle } from '@/context/VehicleContext';
 import { fetchPrediction, fetchModelMetrics } from '@/lib/api';
 import { PredictionResponse } from '@/types';
 import {
   Sparkles,
-  BrainCircuit,
   Sliders,
   AlertTriangle,
   CheckCircle,
-  HelpCircle,
   BarChart2,
   Cpu,
   RefreshCw,
+  Info,
+  ShieldCheck,
+  TrendingDown,
 } from 'lucide-react';
 
 export default function PredictionsPage() {
-  const { selectedVehicle } = useVehicle();
+  const { selectedVehicle, isSimulating, activeScenario, scenarioChangeCount } = useVehicle();
   const vehicleId = selectedVehicle?.vin || 'KA05ER7777';
 
   const [prediction, setPrediction] = useState<PredictionResponse | null>(null);
@@ -25,7 +26,7 @@ export default function PredictionsPage() {
   const [cyclesAhead, setCyclesAhead] = useState<number>(50);
   const [loading, setLoading] = useState<boolean>(true);
 
-  const runInference = async (ahead: number) => {
+  const runInference = useCallback(async (ahead: number) => {
     try {
       setLoading(true);
       const [pred, metrics] = await Promise.all([
@@ -39,197 +40,251 @@ export default function PredictionsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [vehicleId]);
 
   useEffect(() => {
     runInference(cyclesAhead);
-  }, [vehicleId]);
+  }, [runInference, cyclesAhead, activeScenario, scenarioChangeCount]);
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-8">
+    <div className="space-y-6 max-w-7xl mx-auto pb-10">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-border">
         <div>
-          <h1 className="text-2xl font-bold text-[#F4F7FB] tracking-tight flex items-center gap-2">
-            AI Battery Health & Degradation Engine
-            <span className="text-xs font-semibold px-2 py-0.5 rounded bg-[#55D889]/20 text-[#55D889] border border-[#55D889]/40">
-              Scikit-Learn ML Model v1.0
+          <h1 className="text-xl font-bold text-primary-text tracking-tight flex items-center gap-2">
+            AI Battery Degradation & RUL Engine
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded-[4px] bg-accent-primary/10 text-accent-primary border border-accent-primary/30 font-semibold">
+              Random Forest ML v1.0
+            </span>
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded-[4px] bg-surface-secondary text-text-muted border border-border">
+              {isSimulating ? 'Calibrated CAN Telemetry' : 'Live Asset Ingestion'}
             </span>
           </h1>
-          <p className="text-xs text-[#9BA9BB]">
-            Random Forest SOH Regressor & Isolation Forest Anomaly Detection
+          <p className="text-xs text-text-muted mt-0.5">
+            Nonlinear multi-feature degradation trajectory regressor and Isolation Forest anomaly detector
           </p>
         </div>
         <button
           onClick={() => runInference(cyclesAhead)}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#111B2B] hover:bg-[#172337] border border-[#263449] text-xs font-medium text-[#55D889]"
+          disabled={loading}
+          className="btn-standard bg-surface-primary hover:bg-surface-secondary text-primary-text border border-border hover:border-accent-primary shadow-subtle disabled:opacity-50"
         >
-          <RefreshCw className="w-3.5 h-3.5" />
-          <span>Re-run Inference</span>
+          <RefreshCw className={`w-4 h-4 text-accent-primary flex-shrink-0 ${loading ? 'animate-spin' : ''}`} />
+          <span>{loading ? 'Computing Inference...' : 'Re-run Inference'}</span>
         </button>
       </div>
 
       {/* Interactive Simulation Controls Slider */}
-      <div className="glass-card p-5 border border-[#4C9FFF]/40 flex flex-col md:flex-row items-center justify-between gap-6">
+      <div className="surface-card p-5 sm:p-6 border border-border flex flex-col md:flex-row items-center justify-between gap-5 shadow-subtle">
         <div className="space-y-1">
-          <div className="text-xs font-bold text-[#4C9FFF] uppercase tracking-wide flex items-center gap-1.5">
-            <Sliders className="w-4 h-4" />
-            <span>Aging Trajectory Scenario Generator</span>
+          <div className="text-xs font-semibold text-accent-secondary uppercase tracking-wider flex items-center gap-1.5 font-mono">
+            <Sliders className="w-4 h-4 text-accent-primary flex-shrink-0" />
+            <span>Aging Trajectory Simulator</span>
           </div>
-          <p className="text-xs text-[#9BA9BB]">
-            Project future capacity fade and remaining useful life by simulating additional charge cycles:
+          <p className="text-xs text-text-secondary leading-relaxed max-w-xl">
+            Project future capacity retention and RUL by simulating additional full equivalent charge cycles:
           </p>
         </div>
 
-        <div className="flex items-center gap-4 w-full md:w-auto">
-          <input
-            type="range"
-            min="0"
-            max="300"
-            step="10"
-            value={cyclesAhead}
-            onChange={(e) => {
-              const val = Number(e.target.value);
-              setCyclesAhead(val);
-              runInference(val);
-            }}
-            className="w-48 accent-[#55D889]"
-          />
-          <span className="font-mono font-bold text-sm text-[#F4F7FB] whitespace-nowrap">
-            +{cyclesAhead} Cycles
-          </span>
+        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto justify-end">
+          {[10, 50, 100, 200, 300].map((preset) => (
+            <button
+              key={preset}
+              onClick={() => setCyclesAhead(preset)}
+              className={`px-3 py-1.5 rounded-[6px] text-xs font-mono transition-colors ${
+                cyclesAhead === preset
+                  ? 'bg-accent-primary text-white font-bold shadow-xs'
+                  : 'bg-surface-secondary text-text-secondary border border-border hover:text-primary-text'
+              }`}
+            >
+              +{preset}
+            </button>
+          ))}
+          <div className="flex items-center gap-3 ml-1">
+            <input
+              type="range"
+              min="0"
+              max="300"
+              step="10"
+              value={cyclesAhead}
+              onChange={(e) => setCyclesAhead(Number(e.target.value))}
+              className="w-36 accent-accent-primary cursor-pointer"
+            />
+            <span className="font-mono font-semibold text-xs text-primary-text whitespace-nowrap bg-surface-secondary px-3 py-1.5 rounded-[6px] border border-border">
+              +{cyclesAhead} Cycles
+            </span>
+          </div>
         </div>
       </div>
 
       {/* Main Predictions Output Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="glass-card p-5 space-y-2">
-          <div className="text-xs text-[#9BA9BB] flex items-center justify-between">
+        <div className="surface-card p-5 sm:p-6 space-y-1.5 shadow-subtle">
+          <div className="text-xs text-text-secondary font-medium flex items-center justify-between">
             <span>Predicted SOH</span>
-            <Sparkles className="w-4 h-4 text-[#55D889]" />
+            <Sparkles className="w-4 h-4 text-accent-primary flex-shrink-0" />
           </div>
-          <div className="text-3xl font-extrabold text-[#55D889] font-mono">
+          <div className="text-2xl font-bold text-accent-primary font-mono tabular-nums">
             {prediction?.predicted_soh ?? 88.4}%
           </div>
-          <div className="text-[11px] text-[#9BA9BB]">
+          <div className="text-[11px] text-text-muted">
             Baseline SOH: {prediction?.current_soh ?? 88.4}%
           </div>
         </div>
 
-        <div className="glass-card p-5 space-y-2">
-          <div className="text-xs text-[#9BA9BB] flex items-center justify-between">
+        <div className="surface-card p-5 sm:p-6 space-y-1.5 shadow-subtle">
+          <div className="text-xs text-text-secondary font-medium flex items-center justify-between">
             <span>Remaining Useful Life (RUL)</span>
-            <Cpu className="w-4 h-4 text-[#4C9FFF]" />
+            <Cpu className="w-4 h-4 text-accent-secondary flex-shrink-0" />
           </div>
-          <div className="text-3xl font-extrabold text-[#4C9FFF] font-mono">
+          <div className="text-2xl font-bold text-accent-secondary font-mono tabular-nums">
             {prediction?.predicted_rul_cycles ?? 1650}
           </div>
-          <div className="text-[11px] text-[#9BA9BB]">
-            Cycles to 70.0% End-of-Life retention
+          <div className="text-[11px] text-text-muted">
+            Cycles to 70.0% EOL threshold
           </div>
         </div>
 
-        <div className="glass-card p-5 space-y-2">
-          <div className="text-xs text-[#9BA9BB] flex items-center justify-between">
+        <div className="surface-card p-5 sm:p-6 space-y-1.5 shadow-subtle">
+          <div className="text-xs text-text-secondary font-medium flex items-center justify-between">
             <span>Degradation Rate</span>
-            <BarChart2 className="w-4 h-4 text-[#F4C44E]" />
+            <BarChart2 className="w-4 h-4 text-status-warning flex-shrink-0" />
           </div>
-          <div className="text-3xl font-extrabold text-[#F4C44E] font-mono">
+          <div className="text-2xl font-bold text-status-warning font-mono tabular-nums">
             {prediction?.degradation_rate_per_100_cycles ?? 1.54}%
           </div>
-          <div className="text-[11px] text-[#9BA9BB]">
-            Per 100 Equivalent Full Cycles
+          <div className="text-[11px] text-text-muted">
+            Per 100 Equivalent Cycles
           </div>
         </div>
 
-        <div className="glass-card p-5 space-y-2">
-          <div className="text-xs text-[#9BA9BB] flex items-center justify-between">
+        <div className="surface-card p-5 sm:p-6 space-y-1.5 shadow-subtle">
+          <div className="text-xs text-text-secondary font-medium flex items-center justify-between">
             <span>Anomaly Risk Score</span>
-            <AlertTriangle className={`w-4 h-4 ${prediction?.is_anomaly ? 'text-[#EF6262]' : 'text-[#55D889]'}`} />
+            <AlertTriangle className={`w-4 h-4 flex-shrink-0 ${prediction?.is_anomaly ? 'text-status-critical' : 'text-accent-primary'}`} />
           </div>
-          <div className={`text-3xl font-extrabold font-mono ${prediction?.is_anomaly ? 'text-[#EF6262]' : 'text-[#55D889]'}`}>
+          <div className={`text-2xl font-bold font-mono tabular-nums ${prediction?.is_anomaly ? 'text-status-critical' : 'text-accent-primary'}`}>
             {prediction?.anomaly_score ?? 0.05}
           </div>
-          <div className="text-[11px] text-[#9BA9BB]">
-            {prediction?.is_anomaly ? 'Thermal/voltage anomaly flagged' : 'Nominal operation envelope'}
+          <div className="text-[11px] text-text-muted">
+            {prediction?.is_anomaly ? 'Out-of-envelope reading flagged' : 'Nominal operation envelope'}
           </div>
         </div>
       </div>
 
-      {/* Model Evaluation Metrics & Feature Importances */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Historical vs Predicted Trajectory Comparison */}
+      <div className="surface-card p-4 border border-border space-y-2.5">
+        <div className="flex items-center justify-between border-b border-border/60 pb-2">
+          <div>
+            <h3 className="text-sm font-semibold text-primary-text flex items-center gap-2">
+              <TrendingDown className="w-4 h-4 text-accent-primary flex-shrink-0" />
+              <span>Electrochemical Degradation Trajectory Comparison</span>
+            </h3>
+            <p className="text-xs text-text-muted">
+              Current calibrated state vs simulated trajectory across {cyclesAhead} future cycles
+            </p>
+          </div>
+          <span className="text-[10px] font-mono px-2 py-0.5 rounded-[4px] bg-surface-secondary text-primary-text border border-border">
+            Δ Fade: -{((prediction?.current_soh ?? 88.4) - (prediction?.predicted_soh ?? 88.4)).toFixed(2)}% SOH
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs font-mono">
+          <div className="p-3 rounded-[6px] bg-surface-secondary border border-border">
+            <span className="text-text-muted block text-[10px]">Current Asset Baseline</span>
+            <div className="text-base font-bold text-primary-text mt-0.5">
+              {prediction?.current_soh ?? 88.4}% SOH
+            </div>
+            <span className="text-[10px] text-text-muted mt-0.5 block">Cycle: 238 Completed</span>
+          </div>
+
+          <div className="p-3 rounded-[6px] bg-surface-secondary border border-border">
+            <span className="text-text-muted block text-[10px]">Simulated Horizon (+{cyclesAhead} Cycles)</span>
+            <div className="text-base font-bold text-accent-primary mt-0.5">
+              {prediction?.predicted_soh ?? 88.4}% SOH
+            </div>
+            <span className="text-[10px] text-text-muted mt-0.5 block">Cycle: {238 + cyclesAhead} Target</span>
+          </div>
+
+          <div className="p-3 rounded-[6px] bg-surface-secondary border border-border">
+            <span className="text-text-muted block text-[10px]">End of Life (EOL) Projection</span>
+            <div className="text-base font-bold text-status-warning mt-0.5">
+              {prediction?.predicted_rul_cycles ?? 1650} Cycles Remaining
+            </div>
+            <span className="text-[10px] text-text-muted mt-0.5 block">Target: 70.0% Warranty Floor</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Model Evaluation & Feature Importances */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Model Evaluation Card */}
-        <div className="glass-card p-5 space-y-4">
-          <div className="flex items-center justify-between border-b border-[#263449] pb-3">
+        <div className="surface-card p-4 space-y-3">
+          <div className="flex items-center justify-between border-b border-border/60 pb-2">
             <div>
-              <h3 className="text-sm font-semibold text-[#F4F7FB]">
-                Model Evaluation & Verification Metrics
+              <h3 className="text-sm font-semibold text-primary-text">
+                Model Evaluation & Benchmark
               </h3>
-              <p className="text-xs text-[#9BA9BB]">
-                Independent validation set benchmark results
+              <p className="text-xs text-text-muted">
+                Independent validation set benchmark metrics
               </p>
             </div>
-            <span className="text-[10px] px-2 py-0.5 rounded bg-[#172337] text-[#55D889] border border-[#263449]">
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded-[4px] bg-surface-secondary text-accent-primary border border-border">
               Verified
             </span>
           </div>
 
-          <div className="grid grid-cols-3 gap-3 text-center">
-            <div className="p-3 rounded-xl bg-[#172337]/50 border border-[#263449]">
-              <span className="text-[11px] text-[#9BA9BB]">MAE (Mean Abs Error)</span>
-              <div className="text-xl font-extrabold text-[#55D889] mt-1 font-mono">
+          <div className="grid grid-cols-3 gap-2.5 text-center">
+            <div className="p-2.5 rounded-[6px] bg-surface-secondary border border-border">
+              <span className="text-[10px] text-text-muted">MAE</span>
+              <div className="text-base font-bold text-accent-primary mt-0.5 font-mono">
                 {modelMetrics?.evaluation_metrics?.MAE_percent ?? 0.503}%
               </div>
             </div>
-            <div className="p-3 rounded-xl bg-[#172337]/50 border border-[#263449]">
-              <span className="text-[11px] text-[#9BA9BB]">RMSE</span>
-              <div className="text-xl font-extrabold text-[#4C9FFF] mt-1 font-mono">
+            <div className="p-2.5 rounded-[6px] bg-surface-secondary border border-border">
+              <span className="text-[10px] text-text-muted">RMSE</span>
+              <div className="text-base font-bold text-accent-secondary mt-0.5 font-mono">
                 {modelMetrics?.evaluation_metrics?.RMSE_percent ?? 0.626}%
               </div>
             </div>
-            <div className="p-3 rounded-xl bg-[#172337]/50 border border-[#263449]">
-              <span className="text-[11px] text-[#9BA9BB]">R² Coefficient</span>
-              <div className="text-xl font-extrabold text-[#F4C44E] mt-1 font-mono">
+            <div className="p-2.5 rounded-[6px] bg-surface-secondary border border-border">
+              <span className="text-[10px] text-text-muted">R² Score</span>
+              <div className="text-base font-bold text-status-warning mt-0.5 font-mono">
                 {modelMetrics?.evaluation_metrics?.R2_Score ?? 0.979}
               </div>
             </div>
           </div>
 
-          <div className="text-xs text-[#9BA9BB] space-y-1.5 pt-2">
-            <div><b>Model Architecture:</b> {modelMetrics?.algorithm || 'Random Forest Regressor (n_estimators=120, max_depth=12)'}</div>
-            <div><b>Training Dataset:</b> {modelMetrics?.dataset_info?.source || 'Calibrated Li-ion NMC Battery Degradation Simulation'}</div>
-            <div className="text-[11px] text-[#64748B] pt-2 border-t border-[#263449]/40 leading-relaxed">
-              <b>Validation Notice:</b> {prediction?.disclaimer}
-            </div>
+          <div className="text-xs text-text-muted space-y-1 pt-1 font-mono">
+            <div><span className="text-text-secondary">Model:</span> {modelMetrics?.algorithm || 'Random Forest Regressor (n_estimators=120)'}</div>
+            <div><span className="text-text-secondary">Dataset:</span> {modelMetrics?.dataset_info?.source || 'Calibrated Li-ion NMC Degradation Profile'}</div>
           </div>
         </div>
 
         {/* Feature Importance Breakdown */}
-        <div className="glass-card p-5 space-y-4">
-          <div className="flex items-center justify-between border-b border-[#263449] pb-3">
-            <div>
-              <h3 className="text-sm font-semibold text-[#F4F7FB]">
-                Electrochemical Feature Importance
-              </h3>
-              <p className="text-xs text-[#9BA9BB]">
-                Gini-impurity contribution across tree estimators
-              </p>
-            </div>
+        <div className="surface-card p-4 space-y-3">
+          <div className="border-b border-border/60 pb-2">
+            <h3 className="text-sm font-semibold text-primary-text">
+              Electrochemical Feature Importance
+            </h3>
+            <p className="text-xs text-text-muted">
+              Gini-impurity contribution across tree estimators
+            </p>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-2.5">
             {prediction?.feature_importance &&
               Object.entries(prediction.feature_importance).map(([name, weight]) => {
                 const pct = Math.round(weight * 100);
                 return (
                   <div key={name} className="space-y-1">
                     <div className="flex justify-between text-xs">
-                      <span className="text-[#9BA9BB] capitalize">{name.replace('_', ' ')}</span>
-                      <span className="font-mono font-bold text-[#F4F7FB]">{pct}%</span>
+                      <span className="text-text-secondary capitalize">{name.replace('_', ' ')}</span>
+                      <span className="font-mono font-semibold text-primary-text">{pct}%</span>
                     </div>
-                    <div className="w-full bg-[#172337] h-2 rounded-full overflow-hidden">
+                    <div className="w-full bg-surface-secondary h-1.5 rounded-[2px] overflow-hidden">
                       <div
-                        className="bg-gradient-to-r from-[#4C9FFF] to-[#55D889] h-full rounded-full transition-all duration-500"
+                        className="bg-accent-primary h-full rounded-[2px] transition-all duration-300"
                         style={{ width: `${Math.max(5, pct)}%` }}
                       />
                     </div>
@@ -241,16 +296,16 @@ export default function PredictionsPage() {
       </div>
 
       {/* AI Recommendations */}
-      <div className="glass-card p-5 space-y-3">
-        <h3 className="text-sm font-semibold text-[#F4F7FB] flex items-center gap-2">
-          <CheckCircle className="w-4 h-4 text-[#55D889]" />
-          <span>AI Maintenance & Battery Life Recommendations</span>
+      <div className="surface-card p-4 space-y-2.5">
+        <h3 className="text-sm font-semibold text-primary-text flex items-center gap-2">
+          <CheckCircle className="w-4 h-4 text-accent-primary flex-shrink-0" />
+          <span>Predictive Battery Optimization Actions</span>
         </h3>
-        <ul className="space-y-2 text-xs text-[#9BA9BB]">
+        <ul className="space-y-1.5 text-xs text-text-secondary">
           {prediction?.recommendations.map((rec, i) => (
-            <li key={i} className="flex items-start gap-2 p-2.5 rounded-lg bg-[#172337]/40 border border-[#263449]">
-              <span className="text-[#55D889] font-bold mt-0.5">•</span>
-              <span className="text-[#F4F7FB]">{rec}</span>
+            <li key={i} className="flex items-start gap-2 p-2 rounded-[6px] bg-surface-secondary border border-border">
+              <span className="text-accent-primary font-bold mt-0.5">•</span>
+              <span className="text-primary-text">{rec}</span>
             </li>
           ))}
         </ul>

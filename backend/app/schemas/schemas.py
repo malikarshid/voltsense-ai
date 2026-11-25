@@ -200,12 +200,31 @@ class MaintenanceCreate(BaseModel):
 # Simulator Schemas
 class SimulatorControl(BaseModel):
     action: str = Field(..., description="start, stop, reset, scenario")
-    scenario: Optional[str] = Field("normal", description="normal, charging, discharging, high_temp, cell_imbalance, voltage_anomaly, comm_fail")
+    scenario: Optional[str] = Field("normal", description="normal, charging, discharging, high_temp, cell_imbalance, aging")
+    scenario_id: Optional[str] = None
+    vehicle_id: Optional[str] = "KA05ER7777"
     speed_factor: Optional[float] = 1.0
+
+class ScenarioRequest(BaseModel):
+    vehicle_id: Optional[str] = "KA05ER7777"
+    scenario_id: Optional[str] = None
+    scenario: Optional[str] = None
+    speed_factor: Optional[float] = 1.0
+
+class ScenarioResponse(BaseModel):
+    active_scenario: str
+    scenario_id: str
+    vehicle_id: str
+    is_running: bool
+    status: str
+    timestamp: str
+    metadata: Dict[str, Any]
+    telemetry: Dict[str, Any]
 
 class SimulatorStatus(BaseModel):
     is_running: bool
     scenario: str
+    scenario_name: Optional[str] = "Standard Driving Profile"
     speed_factor: float
     tick_count: int
     active_vehicle_id: Optional[str]

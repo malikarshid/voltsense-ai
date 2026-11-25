@@ -1,6 +1,10 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 import os
+from pathlib import Path
 from typing import List
+
+_BACKEND_DIR = Path(__file__).resolve().parent.parent.parent
+_DEFAULT_DB_FILE = (_BACKEND_DIR / "voltsense.db").as_posix()
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "VoltSense AI"
@@ -11,7 +15,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
     ALGORITHM: str = "HS256"
     
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./voltsense.db")
+    DATABASE_URL: str = os.getenv("DATABASE_URL", f"sqlite+aiosqlite:///{_DEFAULT_DB_FILE}")
     
     CORS_ORIGINS: List[str] = [
         "http://localhost:3000",

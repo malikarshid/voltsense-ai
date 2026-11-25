@@ -70,8 +70,11 @@ async def create_vehicle(v_in: VehicleCreate, db: AsyncSession = Depends(get_db)
         db.add(cell)
         
     await db.commit()
-    await db.refresh(vehicle)
-    return VehicleResponse.model_validate(vehicle)
+    result = await db.execute(
+        select(Vehicle).options(selectinload(Vehicle.pack)).where(Vehicle.id == vehicle.id)
+    )
+    vehicle_with_pack = result.scalar_one()
+    return VehicleResponse.model_validate(vehicle_with_pack)
 
 @router.delete("/{vehicle_id}")
 async def delete_vehicle(vehicle_id: str, db: AsyncSession = Depends(get_db)):

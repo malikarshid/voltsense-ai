@@ -29,15 +29,19 @@ async def get_battery_health(vehicle_id: str, db: AsyncSession = Depends(get_db)
         vehicle = res.scalars().first()
 
     pack = vehicle.pack if vehicle else None
-    is_sim_vehicle = bool(vehicle and vehicle.vin == "KA05ER7777")
+    target_vin = vehicle.vin if vehicle else vehicle_id
+    sim_state = simulator.get_or_create_vehicle_state(target_vin)
     
-    # Sync with real-time simulator values if KA05ER7777
-    soc = simulator.soc if is_sim_vehicle else (pack.current_soc if pack else 67.0)
-    soh = simulator.soh if is_sim_vehicle else (pack.current_soh if pack else 88.4)
-    volt = simulator.pack_voltage if is_sim_vehicle else (pack.total_voltage if pack else (vehicle.nominal_voltage if vehicle else 35.0))
-    temp = simulator.avg_temperature if is_sim_vehicle else (pack.avg_temperature if pack else 23.6)
-    imp = simulator.total_impedance if is_sim_vehicle else (pack.total_impedance if pack else 0.1085)
-    rng = simulator.range_km if is_sim_vehicle else (pack.estimated_range_km if pack else 48.0)
+    # Sync with authoritative real-time simulator values for this specific vehicle
+    soc = sim_state.soc
+    soh = sim_state.soh
+    volt = sim_state.pack_voltage
+    temp = sim_state.avg_temperature
+    imp = sim_state.total_impedance
+    rng = sim_state.range_km
+    health_score = sim_state.health_score
+    health_status = sim_state.health_status
+    cycle_count = sim_state.cycle_count
     
     orig_ah = vehicle.original_capacity_ah if vehicle else 100.0
     curr_ah = round((soh / 100.0) * orig_ah, 1)
@@ -45,18 +49,18 @@ async def get_battery_health(vehicle_id: str, db: AsyncSession = Depends(get_db)
     summary = battery_service.compute_degradation_summary(curr_ah, orig_ah)
     
     cell_responses = []
-    if is_sim_vehicle and simulator.cells:
-        for idx, c in enumerate(simulator.cells, start=1):
+    if sim_state.cells:
+        for idx, c in enumerate(sim_state.cells, start=1):
             cell_responses.append(BatteryCellResponse(
-                id=f"sim-cell-{idx}",
+                id=f"sim-cell-{target_vin}-{idx}",
                 vehicle_id=vehicle.id if vehicle else vehicle_id,
                 cell_index=c["cell_index"],
-                cell_serial=f"CEL-8840-{idx:02d}",
+                cell_serial=f"CEL-{target_vin[:4]}-{idx:02d}",
                 voltage=c["voltage"],
                 temperature=c["temperature"],
                 internal_resistance=c["internal_resistance"],
                 status=c["status"],
-                updated_at=simulator.last_heartbeat
+                updated_at=sim_state.last_heartbeat
             ))
     elif vehicle and vehicle.cells:
         cell_responses = [BatteryCellResponse.model_validate(c) for c in vehicle.cells]
@@ -70,9 +74,9 @@ async def get_battery_health(vehicle_id: str, db: AsyncSession = Depends(get_db)
         vehicle_id=vehicle.id if vehicle else vehicle_id,
         soc_percentage=soc,
         estimated_range_km=rng,
-        health_score=pack.health_score if pack else 86,
-        health_status="Good" if soh >= 80 else ("Fair" if soh >= 70 else "Degraded"),
-        cycle_count=pack.total_cycles if pack else 238,
+        health_score=health_score,
+        health_status=health_status,
+        cycle_count=cycle_count,
         design_capacity_ah=pack.design_capacity_ah if pack else 105.0,
         original_capacity_ah=orig_ah,
         current_capacity_ah=curr_ah,
@@ -99,8 +103,10 @@ async def get_degradation_trend(
         )
     )
     vehicle = result.scalar_one_or_none()
-    current_ah = vehicle.current_capacity_ah if vehicle else 88.4
+    target_vin = vehicle.vin if vehicle else vehicle_id
+    sim_state = simulator.get_or_create_vehicle_state(target_vin)
     original_ah = vehicle.original_capacity_ah if vehicle else 100.0
+    current_ah = round((sim_state.soh / 100.0) * original_ah, 1)
     return battery_service.get_degradation_history(period, current_ah=current_ah, original_ah=original_ah)
 
 @router.get("/{vehicle_id}/temperature-trend")
@@ -111,7 +117,9 @@ async def get_temperature_trend(vehicle_id: str, db: AsyncSession = Depends(get_
         )
     )
     vehicle = result.scalar_one_or_none()
-    base_temp = vehicle.pack.avg_temperature if (vehicle and vehicle.pack) else 23.6
+    target_vin = vehicle.vin if vehicle else vehicle_id
+    sim_state = simulator.get_or_create_vehicle_state(target_vin)
+    base_temp = sim_state.avg_temperature
     return battery_service.get_temperature_history(base_temp=base_temp)
 
 @router.get("/{vehicle_id}/cells", response_model=List[BatteryCellResponse])

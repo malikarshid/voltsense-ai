@@ -12,19 +12,13 @@ import { BatteryCellCard } from '@/components/monitoring/BatteryCellCard';
 import { RealtimeSensorChart } from '@/components/monitoring/RealtimeSensorChart';
 import { BatteryCell } from '@/types';
 import {
-  Activity,
   Layers,
-  Radio,
   Clock,
-  Server,
-  MessageSquare,
-  AlertTriangle,
-  Wrench,
   X,
 } from 'lucide-react';
 
 export default function LiveMonitoringPage() {
-  const { selectedVehicle } = useVehicle();
+  const { selectedVehicle, activeScenario, scenarioChangeCount, latestTelemetry } = useVehicle();
   const vehicleId = selectedVehicle?.vin || 'KA05ER7777';
 
   const [telemetry, setTelemetry] = useState<any>({
@@ -43,9 +37,15 @@ export default function LiveMonitoringPage() {
   const [lastSeenTime, setLastSeenTime] = useState<string>('a few seconds ago');
 
   useEffect(() => {
+    if (latestTelemetry && Object.keys(latestTelemetry).length > 0) {
+      setTelemetry(latestTelemetry);
+      setLastSeenTime('just now');
+    }
+  }, [latestTelemetry]);
+
+  useEffect(() => {
     let isMounted = true;
 
-    // Load initial
     Promise.all([fetchTelemetryLatest(vehicleId), fetchTelemetryHistory(vehicleId)])
       .then(([latest, hist]) => {
         if (!isMounted) return;
@@ -58,7 +58,6 @@ export default function LiveMonitoringPage() {
       })
       .catch((e) => console.error('Error fetching live telemetry:', e));
 
-    // Connect to WebSocket stream
     let ws: WebSocket | null = null;
     try {
       ws = new WebSocket(getWebSocketMonitoringUrl(vehicleId));
@@ -90,43 +89,43 @@ export default function LiveMonitoringPage() {
       isMounted = false;
       if (ws) ws.close();
     };
-  }, [vehicleId]);
+  }, [vehicleId, activeScenario, scenarioChangeCount]);
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-8">
-      {/* Header matching Reference 3: "Battery Box" */}
+    <div className="space-y-4 max-w-7xl mx-auto pb-8">
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-[#55D889]/10 text-[#55D889] border border-[#55D889]/30">
-            <Layers className="w-5 h-5" />
+        <div className="flex items-center gap-2.5">
+          <div className="p-2 rounded-[6px] bg-surface-primary text-accent-primary border border-border shadow-subtle">
+            <Layers className="w-4 h-4" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-[#F4F7FB] tracking-tight flex items-center gap-2">
+            <h1 className="text-xl font-bold text-primary-text tracking-tight flex items-center gap-2">
               Battery Box
-              <span className="text-xs font-semibold px-2 py-0.5 rounded bg-[#172337] text-[#55D889] border border-[#263449]">
-                Live Module Rack
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-[4px] bg-surface-secondary text-accent-primary border border-border">
+                Module Rack
               </span>
             </h1>
-            <p className="text-xs text-[#9BA9BB]">
-              Industrial Battery Monitoring System • Pack ID: {vehicleId}
+            <p className="text-xs text-text-muted">
+              Industrial Battery Telemetry • Module ID: {vehicleId}
             </p>
           </div>
         </div>
 
         {/* Live heartbeat indicator */}
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#111B2B] border border-[#263449] text-xs">
-          <span className="w-2.5 h-2.5 rounded-full bg-[#55D889] animate-ping" />
-          <span className="text-[#9BA9BB]">Seen: </span>
-          <span className="text-[#F4F7FB] font-semibold">{lastSeenTime}</span>
+        <div className="flex items-center gap-2 px-2.5 py-1 rounded-[6px] bg-surface-primary border border-border text-xs font-mono shadow-subtle">
+          <span className="w-2 h-2 rounded-full bg-accent-primary" />
+          <span className="text-text-muted">Seen: </span>
+          <span className="text-primary-text font-semibold">{lastSeenTime}</span>
         </div>
       </div>
 
-      {/* Main Grid: Left 2/3 (Gauges + Cells) and Right 1/3 (Strip Charts) matching Reference 3 */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Main Grid: Left 2/3 and Right 1/3 */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Left 2 Columns: 3 Gauges + 10 Cell Cards */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Top 3 Analog Radial Gauges matching Reference 3 */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="lg:col-span-2 space-y-4">
+          {/* Top 3 Analog Radial Gauges */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <AnalogRadialGauge
               title="Total Voltage"
               value={telemetry.pack_voltage || 34.9}
@@ -159,21 +158,21 @@ export default function LiveMonitoringPage() {
             />
           </div>
 
-          {/* Cell Cards Grid matching Reference 3 */}
-          <div className="glass-card p-5">
-            <div className="flex items-center justify-between mb-4">
+          {/* Cell Cards Grid */}
+          <div className="surface-card p-4">
+            <div className="flex items-center justify-between mb-3 pb-2 border-b border-border">
               <div>
-                <h3 className="text-sm font-semibold text-[#F4F7FB]">
+                <h3 className="text-sm font-semibold text-primary-text">
                   Individual Battery Cells
                 </h3>
-                <p className="text-xs text-[#9BA9BB]">Click any cell to inspect detailed impedance and thermal telemetry</p>
+                <p className="text-xs text-text-muted">Select any cell to inspect detailed potential & impedance</p>
               </div>
-              <span className="text-xs text-[#9BA9BB]">
+              <span className="text-xs text-text-muted font-mono">
                 Total: {telemetry.cells?.length || 10} Cells
               </span>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 gap-3">
               {(telemetry.cells || []).map((cell: BatteryCell) => (
                 <BatteryCellCard
                   key={cell.cell_index}
@@ -184,43 +183,43 @@ export default function LiveMonitoringPage() {
             </div>
           </div>
 
-          {/* System Communication & Alarm Status Footer matching Reference 3 bottom-left */}
-          <div className="glass-card p-4 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-            <div className="flex items-center justify-between p-2 rounded bg-[#172337]/50 border border-[#263449]">
-              <span className="text-[#9BA9BB]">Data Server</span>
-              <span className="px-2 py-0.5 rounded font-bold text-[10px] bg-[#55D889]/20 text-[#55D889] border border-[#55D889]/40">
+          {/* System Communication & Alarm Status Footer */}
+          <div className="surface-card p-3 grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
+            <div className="flex items-center justify-between p-2 rounded-[6px] bg-surface-secondary border border-border">
+              <span className="text-text-muted">Data Server</span>
+              <span className="px-1.5 py-0.2 rounded-[4px] font-mono text-[10px] bg-surface-primary text-accent-primary border border-accent-primary/30">
                 {telemetry.data_server_status || 'OK'}
               </span>
             </div>
-            <div className="flex items-center justify-between p-2 rounded bg-[#172337]/50 border border-[#263449]">
-              <span className="text-[#9BA9BB]">Message Queue</span>
-              <span className="px-2 py-0.5 rounded font-bold text-[10px] bg-[#55D889]/20 text-[#55D889] border border-[#55D889]/40">
+            <div className="flex items-center justify-between p-2 rounded-[6px] bg-surface-secondary border border-border">
+              <span className="text-text-muted">Message Queue</span>
+              <span className="px-1.5 py-0.2 rounded-[4px] font-mono text-[10px] bg-surface-primary text-accent-primary border border-accent-primary/30">
                 {telemetry.message_queue_status || 'OK'}
               </span>
             </div>
-            <div className="flex items-center justify-between p-2 rounded bg-[#172337]/50 border border-[#263449]">
-              <span className="text-[#9BA9BB]">Current Warnings</span>
-              <span className="px-2 py-0.5 rounded font-bold text-[10px] bg-[#F4C44E]/20 text-[#F4C44E] border border-[#F4C44E]/40">
+            <div className="flex items-center justify-between p-2 rounded-[6px] bg-surface-secondary border border-border">
+              <span className="text-text-muted">Warnings</span>
+              <span className="px-1.5 py-0.2 rounded-[4px] font-mono text-[10px] bg-surface-primary text-status-warning border border-status-warning/30">
                 {telemetry.warnings_count ?? 1}
               </span>
             </div>
-            <div className="flex items-center justify-between p-2 rounded bg-[#172337]/50 border border-[#263449]">
-              <span className="text-[#9BA9BB]">Current Alarms</span>
-              <span className="px-2 py-0.5 rounded font-bold text-[10px] bg-[#EF6262]/20 text-[#EF6262] border border-[#EF6262]/40">
+            <div className="flex items-center justify-between p-2 rounded-[6px] bg-surface-secondary border border-border">
+              <span className="text-text-muted">Alarms</span>
+              <span className="px-1.5 py-0.2 rounded-[4px] font-mono text-[10px] bg-surface-primary text-accent-primary border border-border">
                 {telemetry.alarms_count ?? 0}
               </span>
             </div>
           </div>
         </div>
 
-        {/* Right Column: Real-time Strip Charts matching Reference 3 */}
-        <div className="space-y-4">
-          <div className="glass-card p-3 flex items-center justify-between text-xs text-[#9BA9BB]">
-            <div className="flex items-center gap-1.5 font-semibold text-[#F4F7FB]">
-              <Clock className="w-4 h-4 text-[#55D889]" />
-              <span>01 — Last 1 hour</span>
+        {/* Right Column: Real-time Strip Charts */}
+        <div className="space-y-3">
+          <div className="surface-card p-2.5 flex items-center justify-between text-xs text-text-muted">
+            <div className="flex items-center gap-1.5 font-medium text-primary-text">
+              <Clock className="w-3.5 h-3.5 text-accent-primary" />
+              <span>Telemetry Interval: 1h</span>
             </div>
-            <span className="text-[10px]">Rolling 1-Sec Telemetry</span>
+            <span className="text-[10px] font-mono">CAN-BMS 10Hz</span>
           </div>
 
           <RealtimeSensorChart
@@ -230,7 +229,6 @@ export default function LiveMonitoringPage() {
             data={history}
             minThreshold={32.0}
             maxThreshold={42.0}
-            strokeColor="#4C9FFF"
             yDomain={[25, 48]}
           />
 
@@ -241,7 +239,6 @@ export default function LiveMonitoringPage() {
             data={history}
             minThreshold={15.0}
             maxThreshold={45.0}
-            strokeColor="#55D889"
             yDomain={[10, 60]}
           />
 
@@ -251,7 +248,6 @@ export default function LiveMonitoringPage() {
             unit="Ω"
             data={history}
             maxThreshold={0.1500}
-            strokeColor="#F4C44E"
             yDomain={[0.0, 0.2]}
           />
         </div>
@@ -259,62 +255,65 @@ export default function LiveMonitoringPage() {
 
       {/* Cell Detailed Inspection Modal */}
       {selectedCell && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#111B2B] border border-[#263449] rounded-2xl p-6 max-w-lg w-full space-y-4 shadow-2xl animate-in fade-in zoom-in-95">
-            <div className="flex items-center justify-between border-b border-[#263449] pb-3">
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="surface-elevated border border-border rounded-[10px] p-5 max-w-lg w-full space-y-4 shadow-elevated">
+            <div className="flex items-center justify-between border-b border-border pb-2.5">
               <div>
-                <h3 className="text-lg font-bold text-[#F4F7FB]">
-                  Cell {String(selectedCell.cell_index).padStart(2, '0')} Detailed Diagnostics
+                <h3 className="text-base font-semibold text-primary-text">
+                  Cell {String(selectedCell.cell_index).padStart(2, '0')} Telemetry Inspection
                 </h3>
-                <p className="text-xs text-[#9BA9BB]">{selectedCell.cell_serial || `CEL-8840-${selectedCell.cell_index}`}</p>
+                <p className="text-xs text-text-muted font-mono">{selectedCell.cell_serial || `CEL-8840-${selectedCell.cell_index}`}</p>
               </div>
               <button
                 onClick={() => setSelectedCell(null)}
-                className="p-1 rounded-lg hover:bg-[#172337] text-[#9BA9BB] hover:text-white"
+                className="p-1 rounded-[4px] hover:bg-surface-secondary text-text-muted hover:text-primary-text"
+                aria-label="Close dialog"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 text-xs">
-              <div className="p-3 rounded-xl bg-[#172337]/60 border border-[#263449]">
-                <span className="text-[#9BA9BB]">Measured Voltage</span>
-                <div className="text-xl font-bold text-[#F4F7FB] mt-1 font-mono">
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="p-2.5 rounded-[6px] bg-surface-secondary border border-border">
+                <span className="text-text-muted">Voltage Potential</span>
+                <div className="text-lg font-bold text-primary-text mt-0.5 font-mono">
                   {selectedCell.voltage.toFixed(3)} V
                 </div>
               </div>
-              <div className="p-3 rounded-xl bg-[#172337]/60 border border-[#263449]">
-                <span className="text-[#9BA9BB]">Internal Resistance</span>
-                <div className="text-xl font-bold text-[#F4F7FB] mt-1 font-mono">
+              <div className="p-2.5 rounded-[6px] bg-surface-secondary border border-border">
+                <span className="text-text-muted">Internal Resistance</span>
+                <div className="text-lg font-bold text-primary-text mt-0.5 font-mono">
                   {selectedCell.internal_resistance.toFixed(4)} Ω
                 </div>
               </div>
-              <div className="p-3 rounded-xl bg-[#172337]/60 border border-[#263449]">
-                <span className="text-[#9BA9BB]">Surface Temperature</span>
-                <div className="text-xl font-bold text-[#55D889] mt-1 font-mono">
+              <div className="p-2.5 rounded-[6px] bg-surface-secondary border border-border">
+                <span className="text-text-muted">Surface Temp</span>
+                <div className="text-lg font-bold text-accent-primary mt-0.5 font-mono">
                   {selectedCell.temperature.toFixed(1)} °C
                 </div>
               </div>
-              <div className="p-3 rounded-xl bg-[#172337]/60 border border-[#263449]">
-                <span className="text-[#9BA9BB]">Health Classification</span>
-                <div className="text-base font-bold text-[#F4C44E] mt-1 uppercase">
+              <div className="p-2.5 rounded-[6px] bg-surface-secondary border border-border">
+                <span className="text-text-muted">Status Classification</span>
+                <div className={`text-base font-bold mt-0.5 font-mono uppercase ${
+                  selectedCell.status === 'CRITICAL' ? 'text-status-critical' : selectedCell.status === 'WARNING' ? 'text-status-warning' : 'text-accent-primary'
+                }`}>
                   {selectedCell.status}
                 </div>
               </div>
             </div>
 
-            <div className="text-xs text-[#9BA9BB] bg-[#080D18] p-3 rounded-lg border border-[#263449]">
-              <span className="font-semibold text-[#F4F7FB]">BMS Balance Recommendation: </span>
+            <div className="text-xs text-text-secondary bg-surface-secondary p-3 rounded-[6px] border border-border">
+              <span className="font-semibold text-primary-text">BMS Recommendation: </span>
               {selectedCell.status === 'WARNING'
-                ? 'Passive bleed resistor activation recommended during next charge soak cycle to eliminate 60mV delta.'
+                ? 'Passive cell balancing bleed resistance active during upcoming charge cycle to eliminate 60mV imbalance.'
                 : 'Cell is operating within balanced nominal tolerances.'}
             </div>
 
             <button
               onClick={() => setSelectedCell(null)}
-              className="w-full py-2 rounded-lg bg-[#55D889] text-[#080D18] font-bold text-xs hover:bg-[#32B96F] transition-colors"
+              className="w-full py-1.5 rounded-[6px] bg-surface-secondary hover:bg-surface-primary text-primary-text font-medium text-xs border border-border transition-colors"
             >
-              Close Inspection
+              Dismiss
             </button>
           </div>
         </div>

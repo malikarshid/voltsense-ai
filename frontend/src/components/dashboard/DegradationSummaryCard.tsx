@@ -10,43 +10,44 @@ interface DegradationSummaryCardProps {
 
 export const DegradationSummaryCard: React.FC<DegradationSummaryCardProps> = ({ summary }) => {
   return (
-    <div className="glass-card p-5 h-full flex flex-col justify-between">
+    <div className="surface-card p-4 h-full flex flex-col justify-between">
       <div>
-        <h3 className="text-sm font-semibold text-[#F4F7FB] mb-1">
-          Degradation Summary
-        </h3>
-        <p className="text-xs text-[#9BA9BB] mb-4">Capacity retention statistics</p>
+        <div className="pb-2 mb-3 border-b border-border">
+          <h3 className="text-sm font-semibold text-primary-text">
+            Degradation Summary
+          </h3>
+          <p className="text-xs text-text-muted">Capacity retention analytics</p>
+        </div>
 
-        <div className="space-y-3.5">
+        <div className="space-y-3">
           <div>
-            <div className="text-xs text-[#9BA9BB]">Total Degradation</div>
-            <div className="text-xl font-bold text-[#F4F7FB] mt-0.5">
+            <div className="text-xs text-text-muted">Total Degradation</div>
+            <div className="text-lg font-bold text-primary-text mt-0.5 font-mono tabular-nums">
               {summary.total_degradation_ah} Ah{' '}
-              <span className="text-sm font-medium text-[#9BA9BB]">
+              <span className="text-xs font-normal text-text-secondary">
                 ({summary.total_degradation_pct}%)
               </span>
             </div>
           </div>
 
           <div>
-            <div className="text-xs text-[#9BA9BB]">Average Monthly Degradation</div>
-            <div className="text-xl font-bold text-[#55D889] mt-0.5">
+            <div className="text-xs text-text-muted">Average Monthly Degradation</div>
+            <div className="text-lg font-bold text-accent-primary mt-0.5 font-mono tabular-nums">
               {summary.avg_monthly_degradation_pct}%
             </div>
           </div>
 
           <div>
-            <div className="text-xs text-[#9BA9BB]">Projected Capacity (1 Year)</div>
-            <div className="text-xl font-bold text-[#4C9FFF] mt-0.5">
+            <div className="text-xs text-text-muted">Projected Capacity (1 Year)</div>
+            <div className="text-lg font-bold text-accent-secondary mt-0.5 font-mono tabular-nums">
               {summary.projected_capacity_1yr_min_ah} - {summary.projected_capacity_1yr_max_ah} Ah
             </div>
           </div>
         </div>
       </div>
 
-      {/* Optimal Performance Status Badge matching Reference 1 */}
-      <div className="mt-4 p-3 rounded-lg bg-[#55D889]/10 border border-[#55D889]/30 flex items-center gap-2.5 text-xs text-[#55D889]">
-        <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-[#55D889]" />
+      <div className="mt-4 p-2.5 rounded-[6px] bg-surface-secondary border border-border flex items-center gap-2 text-xs text-accent-primary">
+        <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-accent-primary" />
         <span className="font-medium leading-tight">{summary.performance_status}</span>
       </div>
     </div>

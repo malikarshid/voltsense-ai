@@ -73,6 +73,8 @@ export interface BatteryHealthOverview {
   soh_percentage: number;
   degradation_summary: DegradationSummary;
   pack_voltage: number;
+  pack_current?: number;
+  power_kw?: number;
   avg_temperature: number;
   total_impedance: number;
   min_cell_voltage: number;
@@ -133,6 +135,7 @@ export interface MaintenanceRecord {
 export interface SimulatorStatus {
   is_running: boolean;
   scenario: string;
+  scenario_name?: string;
   speed_factor: number;
   tick_count: number;
   active_vehicle_id: string;

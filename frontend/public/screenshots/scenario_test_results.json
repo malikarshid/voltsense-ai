@@ -1,0 +1,230 @@
+[
+  {
+    "scenario_id": "normal",
+    "scenario_name": "1. Standard Driving Profile",
+    "backend_scenario": "normal",
+    "telemetry": {
+      "soc": 67,
+      "soh": 88.4,
+      "pack_voltage": 35.5,
+      "pack_current": -13.9,
+      "avg_temperature": 23.4,
+      "total_impedance": 0.1091,
+      "voltage_diff": 0.02,
+      "c01_voltage": 3.56,
+      "c01_status": "HEALTHY",
+      "health_score": 86,
+      "health_status": "Good",
+      "cycle_count": 238
+    },
+    "dom_readouts": {
+      "activeBadge": "BATTERY INTELLIGENCE",
+      "bannerTitle": "Battery Degradation Trend",
+      "socDisplay": "67%",
+      "sohMetric": [
+        "Battery Health & Fleet Telemetry",
+        "67%",
+        "88.4",
+        "35.5",
+        "23.7",
+        "238",
+        "88.4",
+        "48"
+      ],
+      "deltaV": "Nov 26, 2026 00:43:17",
+      "cellsCount": 14
+    },
+    "active_alerts_count": 1,
+    "top_alert": "Cell 01 internal impedance elevated (0.0691 Ω) and slight voltage drop detected."
+  },
+  {
+    "scenario_id": "charging",
+    "scenario_name": "2. DC Fast Charging (CCS2)",
+    "backend_scenario": "charging",
+    "telemetry": {
+      "soc": 67.8,
+      "soh": 88.4,
+      "pack_voltage": 38.52,
+      "pack_current": 76.3,
+      "avg_temperature": 32.7,
+      "total_impedance": 0.0921,
+      "voltage_diff": 0.02,
+      "c01_voltage": 3.84,
+      "c01_status": "HEALTHY",
+      "health_score": 88,
+      "health_status": "Charging",
+      "cycle_count": 238
+    },
+    "dom_readouts": {
+      "activeBadge": "BATTERY INTELLIGENCE",
+      "bannerTitle": "Battery Degradation Trend",
+      "socDisplay": "68%",
+      "sohMetric": [
+        "Battery Health & Fleet Telemetry",
+        "68%",
+        "88.4",
+        "38.5",
+        "32.6",
+        "238",
+        "88.4",
+        "49"
+      ],
+      "deltaV": "Nov 26, 2026 00:43:20",
+      "cellsCount": 14
+    },
+    "active_alerts_count": 1,
+    "top_alert": "Cell 01 internal impedance elevated (0.0691 Ω) and slight voltage drop detected."
+  },
+  {
+    "scenario_id": "discharging",
+    "scenario_name": "3. High Dynamic Load",
+    "backend_scenario": "discharging",
+    "telemetry": {
+      "soc": 67.1,
+      "soh": 88.4,
+      "pack_voltage": 33.02,
+      "pack_current": -55.5,
+      "avg_temperature": 33.7,
+      "total_impedance": 0.1148,
+      "voltage_diff": 0.02,
+      "c01_voltage": 3.3,
+      "c01_status": "HEALTHY",
+      "health_score": 84,
+      "health_status": "Good",
+      "cycle_count": 238
+    },
+    "dom_readouts": {
+      "activeBadge": "BATTERY INTELLIGENCE",
+      "bannerTitle": "Battery Degradation Trend",
+      "socDisplay": "67%",
+      "sohMetric": [
+        "Battery Health & Fleet Telemetry",
+        "67%",
+        "88.4",
+        "33.0",
+        "33.7",
+        "238",
+        "88.4",
+        "48"
+      ],
+      "deltaV": "Nov 26, 2026 00:43:23",
+      "cellsCount": 14
+    },
+    "active_alerts_count": 2,
+    "top_alert": "WARNING: Elevated dynamic discharge current (-55.5A) on KA05ER7777. Monitor thermal climb."
+  },
+  {
+    "scenario_id": "high_temp",
+    "scenario_name": "4. Thermal Stress Zone",
+    "backend_scenario": "high_temp",
+    "telemetry": {
+      "soc": 67.1,
+      "soh": 88.4,
+      "pack_voltage": 34.2,
+      "pack_current": -42,
+      "avg_temperature": 54.2,
+      "total_impedance": 0.1388,
+      "voltage_diff": 0.04,
+      "c01_voltage": 3.42,
+      "c01_status": "CRITICAL",
+      "health_score": 62,
+      "health_status": "Thermal Warning",
+      "cycle_count": 238
+    },
+    "dom_readouts": {
+      "activeBadge": "BATTERY INTELLIGENCE",
+      "bannerTitle": "Battery Degradation Trend",
+      "socDisplay": "67%",
+      "sohMetric": [
+        "Battery Health & Fleet Telemetry",
+        "67%",
+        "88.4",
+        "34.2",
+        "54.1",
+        "238",
+        "88.4",
+        "48"
+      ],
+      "deltaV": "Nov 26, 2026 00:43:26",
+      "cellsCount": 14
+    },
+    "active_alerts_count": 2,
+    "top_alert": "CRITICAL: Pack thermal threshold breached on KA05ER7777. Cell C01 core temperature exceeds safety envelope."
+  },
+  {
+    "scenario_id": "cell_imbalance",
+    "scenario_name": "5. Cell Imbalance Injected",
+    "backend_scenario": "cell_imbalance",
+    "telemetry": {
+      "soc": 67.1,
+      "soh": 88.4,
+      "pack_voltage": 33.8,
+      "pack_current": -18.5,
+      "avg_temperature": 26.2,
+      "total_impedance": 0.1296,
+      "voltage_diff": 0.53,
+      "c01_voltage": 3.09,
+      "c01_status": "CRITICAL",
+      "health_score": 65,
+      "health_status": "Imbalanced",
+      "cycle_count": 238
+    },
+    "dom_readouts": {
+      "activeBadge": "BATTERY INTELLIGENCE",
+      "bannerTitle": "Battery Degradation Trend",
+      "socDisplay": "67%",
+      "sohMetric": [
+        "Battery Health & Fleet Telemetry",
+        "67%",
+        "88.4",
+        "33.8",
+        "26.2",
+        "238",
+        "88.4",
+        "48"
+      ],
+      "deltaV": "Nov 26, 2026 00:43:29",
+      "cellsCount": 14
+    },
+    "active_alerts_count": 2,
+    "top_alert": "CRITICAL: Severe sub-module cell imbalance on KA05ER7777. Delta-V spread exceeds 50 mV limit."
+  },
+  {
+    "scenario_id": "aging",
+    "scenario_name": "6. High Degradation Run",
+    "backend_scenario": "aging",
+    "telemetry": {
+      "soc": 58,
+      "soh": 74.2,
+      "pack_voltage": 33.9,
+      "pack_current": -15.6,
+      "avg_temperature": 27.6,
+      "total_impedance": 0.166,
+      "voltage_diff": 0.02,
+      "c01_voltage": 3.38,
+      "c01_status": "WARNING",
+      "health_score": 68,
+      "health_status": "Degraded",
+      "cycle_count": 840
+    },
+    "dom_readouts": {
+      "activeBadge": "BATTERY INTELLIGENCE",
+      "bannerTitle": "Battery Degradation Trend",
+      "socDisplay": "58%",
+      "sohMetric": [
+        "Battery Health & Fleet Telemetry",
+        "58%",
+        "74.2",
+        "33.9",
+        "27.1",
+        "840",
+        "74.2",
+        "36"
+      ],
+      "deltaV": "Nov 26, 2026 00:43:32",
+      "cellsCount": 14
+    },
+    "active_alerts_count": 2,
+    "top_alert": "WARNING: Accelerated battery degradation on KA05ER7777. SOH retention has dropped to 74.2% (EOL: 70.0%)."
+  }
+]
