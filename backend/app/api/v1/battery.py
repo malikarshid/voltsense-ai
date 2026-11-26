@@ -15,18 +15,21 @@ router = APIRouter(prefix="/battery", tags=["Battery Health"])
 
 @router.get("/{vehicle_id}/health", response_model=BatteryHealthOverview)
 async def get_battery_health(vehicle_id: str, db: AsyncSession = Depends(get_db)):
-    await battery_service.seed_default_vehicles(db)
-    
-    result = await db.execute(
-        select(Vehicle).options(selectinload(Vehicle.pack), selectinload(Vehicle.cells)).where(
-            (Vehicle.id == vehicle_id) | (Vehicle.vin == vehicle_id)
+    vehicle = None
+    try:
+        await battery_service.seed_default_vehicles(db)
+        result = await db.execute(
+            select(Vehicle).options(selectinload(Vehicle.pack), selectinload(Vehicle.cells)).where(
+                (Vehicle.id == vehicle_id) | (Vehicle.vin == vehicle_id)
+            )
         )
-    )
-    vehicle = result.scalar_one_or_none()
-    if not vehicle:
-        # Fallback to first vehicle
-        res = await db.execute(select(Vehicle).options(selectinload(Vehicle.pack), selectinload(Vehicle.cells)))
-        vehicle = res.scalars().first()
+        vehicle = result.scalar_one_or_none()
+        if not vehicle:
+            # Fallback to first vehicle
+            res = await db.execute(select(Vehicle).options(selectinload(Vehicle.pack), selectinload(Vehicle.cells)))
+            vehicle = res.scalars().first()
+    except Exception as e:
+        print(f"[BatteryHealth] Notice: using simulator state fallback: {e}")
 
     pack = vehicle.pack if vehicle else None
     target_vin = vehicle.vin if vehicle else vehicle_id
@@ -97,12 +100,16 @@ async def get_degradation_trend(
     period: str = Query("6months", description="7days, 30days, 6months, 12months"),
     db: AsyncSession = Depends(get_db)
 ):
-    result = await db.execute(
-        select(Vehicle).options(selectinload(Vehicle.pack)).where(
-            (Vehicle.id == vehicle_id) | (Vehicle.vin == vehicle_id)
+    vehicle = None
+    try:
+        result = await db.execute(
+            select(Vehicle).options(selectinload(Vehicle.pack)).where(
+                (Vehicle.id == vehicle_id) | (Vehicle.vin == vehicle_id)
+            )
         )
-    )
-    vehicle = result.scalar_one_or_none()
+        vehicle = result.scalar_one_or_none()
+    except Exception as e:
+        print(f"[Degradation] Notice: using simulator state fallback: {e}")
     target_vin = vehicle.vin if vehicle else vehicle_id
     sim_state = simulator.get_or_create_vehicle_state(target_vin)
     original_ah = vehicle.original_capacity_ah if vehicle else 100.0
@@ -111,12 +118,16 @@ async def get_degradation_trend(
 
 @router.get("/{vehicle_id}/temperature-trend")
 async def get_temperature_trend(vehicle_id: str, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(
-        select(Vehicle).options(selectinload(Vehicle.pack)).where(
-            (Vehicle.id == vehicle_id) | (Vehicle.vin == vehicle_id)
+    vehicle = None
+    try:
+        result = await db.execute(
+            select(Vehicle).options(selectinload(Vehicle.pack)).where(
+                (Vehicle.id == vehicle_id) | (Vehicle.vin == vehicle_id)
+            )
         )
-    )
-    vehicle = result.scalar_one_or_none()
+        vehicle = result.scalar_one_or_none()
+    except Exception as e:
+        print(f"[TempTrend] Notice: using simulator state fallback: {e}")
     target_vin = vehicle.vin if vehicle else vehicle_id
     sim_state = simulator.get_or_create_vehicle_state(target_vin)
     base_temp = sim_state.avg_temperature

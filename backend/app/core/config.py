@@ -4,7 +4,13 @@ from pathlib import Path
 from typing import List
 
 _BACKEND_DIR = Path(__file__).resolve().parent.parent.parent
-_DEFAULT_DB_FILE = (_BACKEND_DIR / "voltsense.db").as_posix()
+
+# In Vercel Serverless / AWS Lambda, the deployment directory is strictly read-only.
+# Default SQLite database must be placed in writable /tmp directory if no external DATABASE_URL is provided.
+if os.getenv("VERCEL") or os.getenv("AWS_LAMBDA_FUNCTION_NAME"):
+    _DEFAULT_DB_FILE = "/tmp/voltsense.db"
+else:
+    _DEFAULT_DB_FILE = (_BACKEND_DIR / "voltsense.db").as_posix()
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "VoltSense AI"

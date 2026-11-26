@@ -11,14 +11,20 @@ sim_task = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Initialize Database tables
-    await init_db()
-    print("[VoltSense Backend] Database initialized.")
+    # Initialize Database tables safely (non-blocking in serverless)
+    try:
+        await init_db()
+        print("[VoltSense Backend] Database initialized.")
+    except Exception as e:
+        print(f"[VoltSense Backend] Warning during DB init: {e}")
     
     # Start background physics simulator loop
     global sim_task
-    sim_task = asyncio.create_task(simulator.run_loop())
-    print("[VoltSense Backend] Battery Simulator background task started.")
+    try:
+        sim_task = asyncio.create_task(simulator.run_loop())
+        print("[VoltSense Backend] Battery Simulator background task started.")
+    except Exception as e:
+        print(f"[VoltSense Backend] Warning starting simulator loop: {e}")
     
     yield
     
@@ -27,7 +33,7 @@ async def lifespan(app: FastAPI):
         sim_task.cancel()
         try:
             await sim_task
-        except asyncio.CancelledError:
+        except Exception:
             pass
     print("[VoltSense Backend] Shutdown completed.")
 

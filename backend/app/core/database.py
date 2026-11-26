@@ -58,5 +58,9 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
             await session.close()
 
 async def init_db():
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        print("[VoltSense Database] Tables created/verified.")
+    except Exception as e:
+        print(f"[VoltSense Database] Non-fatal notice during init_db: {e}")
