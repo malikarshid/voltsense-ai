@@ -244,9 +244,12 @@
 | **Local Development Proxy** | `frontend/next.config.mjs` development rewrites | **TESTED LOCALLY (PASS)** | Proxied `localhost:3000/api/v1/vehicles` to backend (5 vehicles). |
 | **Static Asset Pipeline** | `frontend/scripts/copy-standalone-assets.mjs` | **VERIFIED (PASS)** | Standalone static asset sync verified on port 3005 (HTTP 200 CSS/JS). |
 | **Autonomous Sim Worker** | `backend/app/worker.py` standalone process | **TESTED LOCALLY (PASS)** | Standalone 1.0 Hz CAN-BMS loop for container deployments. |
-| **Preview Cloud Deploy** | `npx vercel` preview deployment | **BLOCKED (Awaiting User Auth)** | CLI v67.0.0 installed; requires interactive user `vercel login`. |
-| **Managed DB Provisioning** | Cloud PostgreSQL (Neon / Supabase / RDS) | **BLOCKED (Awaiting DB URL)** | Cloud persistence requires managed PostgreSQL connection string. |
-| **Production Cloud Deploy** | `npx vercel --prod` | **BLOCKED (Requires Approval)** | Production promotion gated on user authorization. |
+| **Cloud Deployment** | Vercel Git-triggered deploy (`voltsense-ai.vercel.app`) | **VERIFIED LIVE (HTTP 200)** | Verified on commits `22d8358` & `79a7d38`. |
+| **Serverless Ephemeral DB** | SQLite `/tmp/voltsense.db` fallback | **VERIFIED LIVE (PASS)** | Safe `/tmp` fallback avoids Lambda read-only filesystem crash. |
+| **Identity Harmonization** | Canonical ID & VIN synchronization across endpoints | **VERIFIED LIVE (PASS)** | `/vehicles` and `/battery/{vin}/health` match (`7dc8b484...` & `56992492...`). |
+| **404 Route Validation** | Rejection of non-existent VINs & vehicles | **VERIFIED LIVE (PASS)** | Unknown vehicles return HTTP 404 on `/vehicles`, `/battery`, and `/predictions`. |
+| **Simulation Scenarios** | 6 scenarios dynamically controlled via REST | **VERIFIED LIVE (PASS)** | Verified live activation of `normal`, `charging`, `discharging`, `high_temp`, `cell_imbalance`, `aging`. |
+| **Managed DB Provisioning** | Cloud PostgreSQL (Neon / Supabase / RDS) | **OPTIONAL (For Durable Data)** | Cloud persistence beyond Lambda cold-starts requires managed PostgreSQL `DATABASE_URL`. |
 
 **Certified By:**  
 Principal Software Architect, Senior Full-Stack Engineer, Automotive 3D Lead, and Cybersecurity Specialist  

@@ -428,10 +428,12 @@ The repository was upgraded for deployment as a single Vercel multi-service proj
 | **Next.js Local Proxy** | `frontend/next.config.mjs` development rewrites | **TESTED LOCALLY (PASS)** | Proxies `/api/v1/*` to `127.0.0.1:8000` during local development; verified with 5 vehicles. |
 | **Static Asset Pipeline** | `frontend/scripts/copy-standalone-assets.mjs` | **VERIFIED (PASS)** | Standalone static asset sync verified on port 3005 (HTTP 200 CSS/JS). |
 | **Continuous Sim Worker** | `backend/app/worker.py` autonomous process | **TESTED LOCALLY (PASS)** | Standalone 1.0 Hz CAN-BMS loop for persistent container deployments. |
-| **Vercel Cloud Preview** | `npx vercel` preview deployment | **BLOCKED (Awaiting User Auth)** | CLI v67.0.0 installed; requires interactive user `vercel login`. |
-| **Managed DB Provisioning** | Cloud PostgreSQL (Neon / Supabase / RDS) | **BLOCKED (Awaiting DB URL)** | Cloud persistence requires managed PostgreSQL connection string. |
-| **Live Cloud WebSockets** | WebSocket handshake in serverless container | **NOT YET VERIFIED (Preview Pending)** | Will be verified upon preview deployment against Vercel network limits. |
-| **Public Production Deploy** | `npx vercel --prod` | **BLOCKED (Requires Approval)** | Production promotion gated on user authorization. |
+| **Vercel Cloud Deployment** | Git-triggered deployment to `voltsense-ai.vercel.app` | **VERIFIED LIVE (HTTP 200)** | Verified on commits `22d8358` & `79a7d38`. Zero startup crashes. |
+| **Serverless Ephemeral DB** | SQLite `/tmp/voltsense.db` fallback | **VERIFIED LIVE (PASS)** | Guarded startup with `/tmp` storage avoids Lambda read-only filesystem crash. |
+| **Vehicle Identity Harmonization** | Canonical ID & VIN synchronization across endpoints | **VERIFIED LIVE (PASS)** | `/vehicles` and `/battery/{vin}/health` match (`7dc8b484...` & `56992492...`). |
+| **404 Route Validation** | Rejection of non-existent VINs & vehicles | **VERIFIED LIVE (PASS)** | Unknown vehicles return HTTP 404 on `/vehicles`, `/battery`, and `/predictions`. |
+| **Simulation Scenario Control** | All 6 scenarios dynamically controlled via REST | **VERIFIED LIVE (PASS)** | Verified live activation of `normal`, `charging`, `discharging`, `high_temp`, `cell_imbalance`, `aging`. |
+| **Managed DB Provisioning** | Cloud PostgreSQL (Neon / Supabase / RDS) | **OPTIONAL (For Durable Data)** | Cloud persistence beyond Lambda cold-starts requires managed PostgreSQL `DATABASE_URL`. |
 
 **Signed & Certified by:**  
 Principal Software Architect, Senior Full-Stack Engineer, Automotive 3D Lead, and Cybersecurity Specialist  
