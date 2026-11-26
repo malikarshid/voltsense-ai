@@ -7,6 +7,10 @@ from app.models.entities import (
     Vehicle, BatteryPack, BatteryCell, SensorReading, BatteryHealthRecord, Alert, MaintenanceRecord
 )
 from app.schemas.schemas import DegradationSummary
+from app.core.config import (
+    CANONICAL_MODEL_GT_ID, CANONICAL_MODEL_GT_VIN,
+    CANONICAL_CYBERSUV_ID, CANONICAL_CYBERSUV_VIN
+)
 
 class BatteryService:
 
@@ -14,15 +18,16 @@ class BatteryService:
     async def seed_default_vehicles(session: AsyncSession):
         """Ensures default reference vehicles exist in database."""
         try:
-            result = await session.execute(select(Vehicle).where(Vehicle.vin == "KA05ER7777"))
+            result = await session.execute(select(Vehicle).where((Vehicle.vin == CANONICAL_MODEL_GT_VIN) | (Vehicle.id == CANONICAL_MODEL_GT_ID)))
             existing = result.scalar_one_or_none()
             if existing:
                 return existing
 
             # Vehicle 1: Reference 1 & 3 Hero Vehicle
             v1 = Vehicle(
+                id=CANONICAL_MODEL_GT_ID,
                 name="VoltSense Model GT",
-                vin="KA05ER7777",
+                vin=CANONICAL_MODEL_GT_VIN,
                 model_year=2024,
                 battery_chemistry="NMC (Nickel Manganese Cobalt)",
                 pack_capacity_kwh=75.0,
@@ -85,8 +90,9 @@ class BatteryService:
 
             # Vehicle 2: Reference 2 Inspired CyberSUV
             v2 = Vehicle(
+                id=CANONICAL_CYBERSUV_ID,
                 name="VoltSense CyberSUV",
-                vin="HWGHLDZ20842872FS",
+                vin=CANONICAL_CYBERSUV_VIN,
                 model_year=2024,
                 battery_chemistry="NMC (High-Nickel Li-ion)",
                 pack_capacity_kwh=82.0,

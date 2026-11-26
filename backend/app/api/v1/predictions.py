@@ -7,6 +7,10 @@ from app.models.entities import Vehicle, BatteryPack, BatteryCell
 from app.schemas.schemas import PredictionRequest, PredictionResponse
 from app.services.ml_service import ml_service
 from app.services.simulator_service import simulator
+from app.core.config import (
+    CANONICAL_MODEL_GT_ID, CANONICAL_MODEL_GT_VIN,
+    CANONICAL_CYBERSUV_ID, CANONICAL_CYBERSUV_VIN
+)
 
 router = APIRouter(prefix="/predictions", tags=["AI Predictive Analytics"])
 
@@ -16,18 +20,34 @@ async def run_ai_prediction(vehicle_id: str, req: PredictionRequest, db: AsyncSe
     Executes trained Random Forest regressor & Isolation Forest anomaly detector
     dynamically on the vehicle's specific telemetry and degradation state.
     """
-    result = await db.execute(
-        select(Vehicle).options(selectinload(Vehicle.pack), selectinload(Vehicle.cells)).where(
-            (Vehicle.id == vehicle_id) | (Vehicle.vin == vehicle_id)
+    vehicle = None
+    try:
+        result = await db.execute(
+            select(Vehicle).options(selectinload(Vehicle.pack), selectinload(Vehicle.cells)).where(
+                (Vehicle.id == vehicle_id) | (Vehicle.vin == vehicle_id)
+            )
         )
-    )
-    vehicle = result.scalar_one_or_none()
+        vehicle = result.scalar_one_or_none()
+    except Exception as e:
+        print(f"[Predictions] Notice: database lookup notice: {e}")
+
     if not vehicle:
-        res = await db.execute(select(Vehicle).options(selectinload(Vehicle.pack), selectinload(Vehicle.cells)))
-        vehicle = res.scalars().first()
+        if vehicle_id in (CANONICAL_MODEL_GT_ID, CANONICAL_MODEL_GT_VIN):
+            target_vin = CANONICAL_MODEL_GT_VIN
+            orig_ah = 100.0
+            cell_count = 10
+        elif vehicle_id in (CANONICAL_CYBERSUV_ID, CANONICAL_CYBERSUV_VIN):
+            target_vin = CANONICAL_CYBERSUV_VIN
+            orig_ah = 100.0
+            cell_count = 10
+        else:
+            raise HTTPException(status_code=404, detail=f"Vehicle '{vehicle_id}' not found.")
+    else:
+        target_vin = vehicle.vin
+        orig_ah = vehicle.original_capacity_ah
+        cell_count = vehicle.cell_count
 
     pack = vehicle.pack if vehicle else None
-    target_vin = vehicle.vin if vehicle else vehicle_id
     sim_state = simulator.get_or_create_vehicle_state(target_vin)
 
     base_cycles = sim_state.cycle_count
@@ -37,7 +57,7 @@ async def run_ai_prediction(vehicle_id: str, req: PredictionRequest, db: AsyncSe
     total_imp = sim_state.total_impedance
     current_amps = sim_state.pack_current
     
-    c_rate = abs(current_amps) / (vehicle.original_capacity_ah if vehicle else 100.0)
+    c_rate = abs(current_amps) / orig_ah
     
     if sim_state.cells:
         voltages = [c["voltage"] for c in sim_state.cells]
@@ -47,7 +67,6 @@ async def run_ai_prediction(vehicle_id: str, req: PredictionRequest, db: AsyncSe
         voltages = [3.60] * 10
         
     dispersion = max(voltages) - min(voltages)
-    cell_count = vehicle.cell_count if vehicle else 10
 
     prediction_result = ml_service.predict_health(
         cycle_count=base_cycles + req.cycles_ahead,

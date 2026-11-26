@@ -5,6 +5,12 @@ from typing import List
 
 _BACKEND_DIR = Path(__file__).resolve().parent.parent.parent
 
+# Canonical fleet vehicles (authoritative source of vehicle identity across all environments)
+CANONICAL_MODEL_GT_ID = "7dc8b484-4d3d-474a-935e-07a9fa31492d"
+CANONICAL_MODEL_GT_VIN = "KA05ER7777"
+CANONICAL_CYBERSUV_ID = "56992492-fc36-4c5b-ad44-45f035724c65"
+CANONICAL_CYBERSUV_VIN = "HWGHLDZ20842872FS"
+
 # In Vercel Serverless / AWS Lambda, the deployment directory is strictly read-only.
 # Default SQLite database must be placed in writable /tmp directory if no external DATABASE_URL is provided.
 if os.getenv("VERCEL") or os.getenv("AWS_LAMBDA_FUNCTION_NAME"):

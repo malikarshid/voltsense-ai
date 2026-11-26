@@ -36,14 +36,29 @@ async def test_multi_vehicle_management():
 @pytest.mark.asyncio
 async def test_battery_health_and_soh_soc_distinction():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        res_v = await ac.get("/api/v1/vehicles")
         res1 = await ac.get("/api/v1/battery/KA05ER7777/health")
         res2 = await ac.get("/api/v1/battery/HWGHLDZ20842872FS/health")
+        res_404_v = await ac.get("/api/v1/vehicles/unknown-vin-999")
+        res_404_b = await ac.get("/api/v1/battery/unknown-vin-999/health")
+        res_404_p = await ac.post("/api/v1/predictions/unknown-vin-999/analyze", json={"vehicle_id": "unknown-vin-999", "cycles_ahead": 10})
         
     assert res1.status_code == 200
     assert res2.status_code == 200
+    assert res_404_v.status_code == 404
+    assert res_404_b.status_code == 404
+    assert res_404_p.status_code == 404
     
+    vehicles = res_v.json()
+    v1_rec = next(v for v in vehicles if v["vin"] == "KA05ER7777")
+    v2_rec = next(v for v in vehicles if v["vin"] == "HWGHLDZ20842872FS")
+
     h1 = res1.json()
     h2 = res2.json()
+
+    # Verify ID consistency between /vehicles and /battery/{vin}/health
+    assert h1["vehicle_id"] == v1_rec["id"]
+    assert h2["vehicle_id"] == v2_rec["id"]
 
     # Verify SOH mathematical calculation: (current / original) * 100
     expected_soh_1 = (h1["current_capacity_ah"] / h1["original_capacity_ah"]) * 100.0

@@ -10,8 +10,22 @@ from app.schemas.schemas import (
 )
 from app.services.battery_service import battery_service
 from app.services.simulator_service import simulator
+from app.core.config import (
+    CANONICAL_MODEL_GT_ID, CANONICAL_MODEL_GT_VIN,
+    CANONICAL_CYBERSUV_ID, CANONICAL_CYBERSUV_VIN
+)
 
 router = APIRouter(prefix="/battery", tags=["Battery Health"])
+
+def _resolve_canonical_vehicle(vehicle_id: str, vehicle: Any = None):
+    """Resolves vehicle identity, VIN, and attributes deterministically or returns None."""
+    if vehicle:
+        return vehicle.id, vehicle.vin, vehicle.original_capacity_ah, (vehicle.pack.design_capacity_ah if vehicle.pack else 105.0)
+    if vehicle_id in (CANONICAL_MODEL_GT_ID, CANONICAL_MODEL_GT_VIN):
+        return CANONICAL_MODEL_GT_ID, CANONICAL_MODEL_GT_VIN, 100.0, 105.0
+    if vehicle_id in (CANONICAL_CYBERSUV_ID, CANONICAL_CYBERSUV_VIN):
+        return CANONICAL_CYBERSUV_ID, CANONICAL_CYBERSUV_VIN, 100.0, 105.0
+    return None, None, None, None
 
 @router.get("/{vehicle_id}/health", response_model=BatteryHealthOverview)
 async def get_battery_health(vehicle_id: str, db: AsyncSession = Depends(get_db)):
@@ -24,15 +38,13 @@ async def get_battery_health(vehicle_id: str, db: AsyncSession = Depends(get_db)
             )
         )
         vehicle = result.scalar_one_or_none()
-        if not vehicle:
-            # Fallback to first vehicle
-            res = await db.execute(select(Vehicle).options(selectinload(Vehicle.pack), selectinload(Vehicle.cells)))
-            vehicle = res.scalars().first()
     except Exception as e:
-        print(f"[BatteryHealth] Notice: using simulator state fallback: {e}")
+        print(f"[BatteryHealth] Notice: database lookup notice: {e}")
 
-    pack = vehicle.pack if vehicle else None
-    target_vin = vehicle.vin if vehicle else vehicle_id
+    canonical_id, target_vin, orig_ah, design_cap = _resolve_canonical_vehicle(vehicle_id, vehicle)
+    if not target_vin:
+        raise HTTPException(status_code=404, detail=f"Vehicle '{vehicle_id}' not found.")
+
     sim_state = simulator.get_or_create_vehicle_state(target_vin)
     
     # Sync with authoritative real-time simulator values for this specific vehicle
@@ -46,9 +58,7 @@ async def get_battery_health(vehicle_id: str, db: AsyncSession = Depends(get_db)
     health_status = sim_state.health_status
     cycle_count = sim_state.cycle_count
     
-    orig_ah = vehicle.original_capacity_ah if vehicle else 100.0
     curr_ah = round((soh / 100.0) * orig_ah, 1)
-    
     summary = battery_service.compute_degradation_summary(curr_ah, orig_ah)
     
     cell_responses = []
@@ -56,7 +66,7 @@ async def get_battery_health(vehicle_id: str, db: AsyncSession = Depends(get_db)
         for idx, c in enumerate(sim_state.cells, start=1):
             cell_responses.append(BatteryCellResponse(
                 id=f"sim-cell-{target_vin}-{idx}",
-                vehicle_id=vehicle.id if vehicle else vehicle_id,
+                vehicle_id=canonical_id,
                 cell_index=c["cell_index"],
                 cell_serial=f"CEL-{target_vin[:4]}-{idx:02d}",
                 voltage=c["voltage"],
@@ -74,13 +84,13 @@ async def get_battery_health(vehicle_id: str, db: AsyncSession = Depends(get_db)
     v_diff = round(max_v - min_v, 2)
 
     return BatteryHealthOverview(
-        vehicle_id=vehicle.id if vehicle else vehicle_id,
+        vehicle_id=canonical_id,
         soc_percentage=soc,
         estimated_range_km=rng,
         health_score=health_score,
         health_status=health_status,
         cycle_count=cycle_count,
-        design_capacity_ah=pack.design_capacity_ah if pack else 105.0,
+        design_capacity_ah=design_cap,
         original_capacity_ah=orig_ah,
         current_capacity_ah=curr_ah,
         soh_percentage=soh,
@@ -110,11 +120,14 @@ async def get_degradation_trend(
         vehicle = result.scalar_one_or_none()
     except Exception as e:
         print(f"[Degradation] Notice: using simulator state fallback: {e}")
-    target_vin = vehicle.vin if vehicle else vehicle_id
+
+    canonical_id, target_vin, orig_ah, _ = _resolve_canonical_vehicle(vehicle_id, vehicle)
+    if not target_vin:
+        raise HTTPException(status_code=404, detail=f"Vehicle '{vehicle_id}' not found.")
+
     sim_state = simulator.get_or_create_vehicle_state(target_vin)
-    original_ah = vehicle.original_capacity_ah if vehicle else 100.0
-    current_ah = round((sim_state.soh / 100.0) * original_ah, 1)
-    return battery_service.get_degradation_history(period, current_ah=current_ah, original_ah=original_ah)
+    current_ah = round((sim_state.soh / 100.0) * orig_ah, 1)
+    return battery_service.get_degradation_history(period, current_ah=current_ah, original_ah=orig_ah)
 
 @router.get("/{vehicle_id}/temperature-trend")
 async def get_temperature_trend(vehicle_id: str, db: AsyncSession = Depends(get_db)):
@@ -128,7 +141,11 @@ async def get_temperature_trend(vehicle_id: str, db: AsyncSession = Depends(get_
         vehicle = result.scalar_one_or_none()
     except Exception as e:
         print(f"[TempTrend] Notice: using simulator state fallback: {e}")
-    target_vin = vehicle.vin if vehicle else vehicle_id
+
+    canonical_id, target_vin, _, _ = _resolve_canonical_vehicle(vehicle_id, vehicle)
+    if not target_vin:
+        raise HTTPException(status_code=404, detail=f"Vehicle '{vehicle_id}' not found.")
+
     sim_state = simulator.get_or_create_vehicle_state(target_vin)
     base_temp = sim_state.avg_temperature
     return battery_service.get_temperature_history(base_temp=base_temp)
