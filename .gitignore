@@ -40,10 +40,27 @@ yarn-error.log*
 .env.development.local
 .env.test.local
 .env.production.local
+.env.production
+.env.*
+*.env
+*.env.*
+backend/.env
+backend/.env.*
+frontend/.env
+frontend/.env.*
+!.env.example
+!backend/.env.example
+!frontend/.env.example
+
+# Vercel
+.vercel/
 
 # OS
 .DS_Store
 Thumbs.db
+
+# Scratch and Temp
+scratch/
 
 # IDE
 .idea/

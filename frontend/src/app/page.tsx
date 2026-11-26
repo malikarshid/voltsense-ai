@@ -36,6 +36,7 @@ export default function DashboardPage() {
   const [degradationData, setDegradationData] = useState<any[]>([]);
   const [tempData, setTempData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const latestSeqRef = useRef<number>(0);
 
   const vehicleId = selectedVehicle?.vin || 'KA05ER7777';
@@ -79,6 +80,7 @@ export default function DashboardPage() {
     async function loadData() {
       try {
         setLoading(true);
+        setError(null);
         const [health, deg, temp] = await Promise.all([
           fetchBatteryHealth(vehicleId),
           fetchDegradationTrend(vehicleId, '6months'),
@@ -89,8 +91,11 @@ export default function DashboardPage() {
           setDegradationData(deg);
           setTempData(temp);
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error('Error loading dashboard data:', err);
+        if (isMounted) {
+          setError(err?.message || 'Failed to connect to CAN-BMS Telemetry Bus');
+        }
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -160,6 +165,28 @@ export default function DashboardPage() {
         <div className="flex flex-col items-center gap-3">
           <div className="w-8 h-8 border-2 border-border border-t-accent-primary rounded-full animate-spin" />
           <span className="text-xs text-text-muted font-mono">Syncing CAN-BMS Telemetry Bus...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error && !healthData) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh] max-w-lg mx-auto p-6">
+        <div className="w-full bg-surface-primary border border-status-critical/30 rounded-[10px] p-6 text-center shadow-subtle space-y-4">
+          <div className="w-12 h-12 rounded-full bg-status-critical/10 text-status-critical flex items-center justify-center mx-auto">
+            <AlertTriangle className="w-6 h-6" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-primary-text">CAN-BMS Bus Connection Disrupted</h3>
+            <p className="text-xs text-text-secondary mt-1">{error}</p>
+          </div>
+          <button
+            onClick={() => window.location.reload()}
+            className="btn-standard bg-accent-primary text-white hover:bg-accent-secondary mx-auto"
+          >
+            Retry Telemetry Link
+          </button>
         </div>
       </div>
     );

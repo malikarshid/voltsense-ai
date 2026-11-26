@@ -390,6 +390,8 @@ While the platform is 100% verified and certified production-ready for local and
 
 ---
 
+---
+
 ## 18. Master Audit Certification & Sign-off
 
 ```
@@ -407,6 +409,29 @@ While the platform is 100% verified and certified production-ready for local and
 ║                                                                            ║
 ╚════════════════════════════════════════════════════════════════════════════╝
 ```
+
+---
+
+## 19. Vercel Multi-Service Deployment Layer (Audited: November 26, 2026)
+
+### 19.1 Implementation Status Matrix
+The repository was upgraded for deployment as a single Vercel multi-service project containing `frontend` and `backend` services:
+
+| Component / Subsystem | Implementation Scope | Verification Status | Operational Notes |
+|---|---|:---:|---|
+| **Root Vercel Configuration** | `vercel.json` with multi-service schema & rewrites | **IMPLEMENTED & TESTED LOCALLY** | Routes `/health`, `/api/v1/(.*)`, `/ws/monitoring/(.*)` to `backend`, `/(.*)` to `frontend`. |
+| **Backend Vercel Entrypoint** | `backend/main.py` entrypoint shim (`main:app`) | **TESTED LOCALLY (PASS)** | Resolves service root and exposes FastAPI ASGI instance. |
+| **Python Runtime Pinning** | `backend/.python-version` set to `3.12` | **IMPLEMENTED** | Explicitly pins runtime version for Vercel Python builder. |
+| **Dual Database Connector** | `backend/app/core/database.py` with asyncpg pool | **TESTED LOCALLY (PASS)** | Preserves local SQLite while supporting managed PostgreSQL (`asyncpg`) with serverless pool limits. |
+| **Frontend API Resolution** | `frontend/src/lib/api.ts` dynamic resolution | **TESTED LOCALLY (PASS)** | Defaults to relative `/api/v1` for browser clients and `127.0.0.1:8000` for SSR. |
+| **Dynamic WebSocket Scheme** | `frontend/src/lib/api.ts` dynamic WSS derivation | **TESTED LOCALLY (PASS)** | Automatically derives `wss://` on HTTPS and `ws://` on local HTTP. |
+| **Next.js Local Proxy** | `frontend/next.config.mjs` development rewrites | **TESTED LOCALLY (PASS)** | Proxies `/api/v1/*` to `127.0.0.1:8000` during local development; verified with 5 vehicles. |
+| **Static Asset Pipeline** | `frontend/scripts/copy-standalone-assets.mjs` | **VERIFIED (PASS)** | Standalone static asset sync verified on port 3005 (HTTP 200 CSS/JS). |
+| **Continuous Sim Worker** | `backend/app/worker.py` autonomous process | **TESTED LOCALLY (PASS)** | Standalone 1.0 Hz CAN-BMS loop for persistent container deployments. |
+| **Vercel Cloud Preview** | `npx vercel` preview deployment | **BLOCKED (Awaiting User Auth)** | CLI v67.0.0 installed; requires interactive user `vercel login`. |
+| **Managed DB Provisioning** | Cloud PostgreSQL (Neon / Supabase / RDS) | **BLOCKED (Awaiting DB URL)** | Cloud persistence requires managed PostgreSQL connection string. |
+| **Live Cloud WebSockets** | WebSocket handshake in serverless container | **NOT YET VERIFIED (Preview Pending)** | Will be verified upon preview deployment against Vercel network limits. |
+| **Public Production Deploy** | `npx vercel --prod` | **BLOCKED (Requires Approval)** | Production promotion gated on user authorization. |
 
 **Signed & Certified by:**  
 Principal Software Architect, Senior Full-Stack Engineer, Automotive 3D Lead, and Cybersecurity Specialist  

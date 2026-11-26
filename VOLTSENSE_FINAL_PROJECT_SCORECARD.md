@@ -214,6 +214,8 @@
 
 ---
 
+---
+
 ## 4. Final Production Verdict & Authorization
 
 ```
@@ -227,6 +229,24 @@
 ║                                                                            ║
 ╚════════════════════════════════════════════════════════════════════════════╝
 ```
+
+---
+
+## 5. Vercel Multi-Service Deployment Layer Status (Audited: November 26, 2026)
+
+| Milestone / Capability | Execution Scope | Certified Status | Supporting Evidence |
+|---|---|:---:|---|
+| **Root Vercel Config** | `vercel.json` services (`frontend`, `backend`) + rewrites | **TESTED LOCALLY (PASS)** | Top-level rewrites route `/health`, `/api/v1/*`, `/ws/monitoring/*`, `/*`. |
+| **FastAPI Vercel Entrypoint** | `backend/main.py` entrypoint shim (`main:app`) | **TESTED LOCALLY (PASS)** | Successfully tested with ASGI instance and imports. |
+| **Python Runtime Pinning** | `backend/.python-version` (Python 3.12) | **IMPLEMENTED** | Configured for Vercel Python builder. |
+| **Database Architecture** | Dual SQLite local / Managed PostgreSQL asyncpg | **TESTED LOCALLY (PASS)** | URL normalization and serverless pooling verified. |
+| **Frontend API Resolution** | `frontend/src/lib/api.ts` dynamic resolution | **TESTED LOCALLY (PASS)** | Same-origin `/api/v1` and dynamic WSS protocol resolution. |
+| **Local Development Proxy** | `frontend/next.config.mjs` development rewrites | **TESTED LOCALLY (PASS)** | Proxied `localhost:3000/api/v1/vehicles` to backend (5 vehicles). |
+| **Static Asset Pipeline** | `frontend/scripts/copy-standalone-assets.mjs` | **VERIFIED (PASS)** | Standalone static asset sync verified on port 3005 (HTTP 200 CSS/JS). |
+| **Autonomous Sim Worker** | `backend/app/worker.py` standalone process | **TESTED LOCALLY (PASS)** | Standalone 1.0 Hz CAN-BMS loop for container deployments. |
+| **Preview Cloud Deploy** | `npx vercel` preview deployment | **BLOCKED (Awaiting User Auth)** | CLI v67.0.0 installed; requires interactive user `vercel login`. |
+| **Managed DB Provisioning** | Cloud PostgreSQL (Neon / Supabase / RDS) | **BLOCKED (Awaiting DB URL)** | Cloud persistence requires managed PostgreSQL connection string. |
+| **Production Cloud Deploy** | `npx vercel --prod` | **BLOCKED (Requires Approval)** | Production promotion gated on user authorization. |
 
 **Certified By:**  
 Principal Software Architect, Senior Full-Stack Engineer, Automotive 3D Lead, and Cybersecurity Specialist  

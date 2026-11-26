@@ -195,10 +195,10 @@ export const TopNav: React.FC = () => {
             ) : (
               <SlidersHorizontal className="w-4 h-4 text-accent-secondary flex-shrink-0" />
             )}
-            <span className="hidden md:inline capitalize text-text-secondary">
-              Scenario: <span className="text-primary-text font-semibold">{activeScenario.replace('_', ' ')}</span>
+            <span className="capitalize text-text-secondary">
+              <span className="hidden md:inline">Scenario: </span>
+              <span className="text-primary-text font-semibold">{activeScenario.replace('_', ' ')}</span>
             </span>
-            <span className="md:hidden capitalize">{activeScenario.slice(0, 4)}</span>
             <ChevronDown className="w-3.5 h-3.5 text-text-muted flex-shrink-0" />
           </button>
           {showScenarioMenu && (
